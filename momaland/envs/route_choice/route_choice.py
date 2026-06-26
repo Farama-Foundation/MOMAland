@@ -321,7 +321,9 @@ class MORouteChoice(MOParallelEnv, EzPickle):
             # load the .json
             data = json.load(graph_json)
             # - Graph -#
-            graph = nx.node_link_graph(data["graph"])
+            # edges="links" preserves the historical key name ("links") used in the network .json
+            # files; networkx >= 3.6 changed the default to "edges", which otherwise raises a KeyError.
+            graph = nx.node_link_graph(data["graph"], edges="links")
             # - Origin/Destination pairs -#
             od = data["od"]
             # - Possible routes for OD pairs -#
