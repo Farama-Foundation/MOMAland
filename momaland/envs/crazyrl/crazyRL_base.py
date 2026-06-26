@@ -318,7 +318,9 @@ class CrazyRLBaseParallelEnv(MOParallelEnv):
 
         def init_window():
             """Initializes the PyGame window."""
-            pygame.init()
+            # pygame.init() also starts the unused audio mixer and joystick subsystems, whose device
+            # enumeration adds ~0.4s of startup (see Farama-Foundation/MOMAland#71); only the display
+            # subsystem (initialized below) is needed.
             pygame.display.init()
             pygame.display.set_caption("Crazy RL")
 
