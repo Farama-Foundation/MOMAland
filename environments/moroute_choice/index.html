@@ -191,7 +191,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -288,7 +288,7 @@
                 </svg>
               </button>
             </div>
-            <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <label class="toc-overlay-icon toc-content-icon" for="__toc">
               <div class="visually-hidden">Toggle table of contents sidebar</div>
               <i class="icon"><svg>
                   <use href="#svg-toc"></use>
@@ -314,25 +314,65 @@
 <td><p>Discrete(3)</p></td>
 </tr>
 <tr class="row-even"><td><p>Observation Space</p></td>
-<td><p>Box(0.0, 4200.0, (1,), float32)</p></td>
+<td><p>Discrete(1)</p></td>
 </tr>
 <tr class="row-odd"><td><p>Reward Space</p></td>
 <td><p>Box(-3.0, 0.0, (2,), float32)</p></td>
 </tr>
 <tr class="row-even"><td><p>Import</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">momaland.envs.mo_routechoice_v0</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">momaland.envs.moroute_choice_v0</span></code></p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>Environment for MO-RouteChoice problem.</p>
-<p>The init method takes in environment arguments and should define the following attributes:</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">Parallel</span></code> environment where drivers learn to travel from a source to a destination while avoiding congestion.</p>
+<p>Multi-objective version of Braess’ Paradox where drivers have two objectives: travel time and monetary cost.
+The environment is a road network and the agents are the drivers that needs to travel from an origin to a destination point.</p>
+<section id="observation-space">
+<h2>Observation Space<a class="headerlink" href="#observation-space" title="Link to this heading">¶</a></h2>
+<p>This environment is stateless, so the observation space is a constant 0. (Discrete with shape (1,)).</p>
+</section>
+<section id="action-space">
+<h2>Action Space<a class="headerlink" href="#action-space" title="Link to this heading">¶</a></h2>
+<p>The action space is a discrete space representing the possible routes that the agent can take.
+The number of routes is different for each agent, as it depends on the number of possible routes for the OD pair of the agent.
+Selecting an action corresponds to choosing a route.</p>
+</section>
+<section id="reward-space">
+<h2>Reward Space<a class="headerlink" href="#reward-space" title="Link to this heading">¶</a></h2>
+<p>The reward space is a 2D vector containing rewards for:</p>
 <ul class="simple">
-<li><p>possible_agents</p></li>
-<li><p>action_spaces</p></li>
-<li><p>observation_spaces
-These attributes should not be changed after initialization.</p></li>
+<li><p>Minimizing travel time (latency).</p></li>
+<li><p>Minimizing monetary cost.</p></li>
 </ul>
+</section>
+<section id="starting-state">
+<h2>Starting State<a class="headerlink" href="#starting-state" title="Link to this heading">¶</a></h2>
+<p>The environment is stateless, so there is no starting state.</p>
+</section>
+<section id="episode-termination">
+<h2>Episode Termination<a class="headerlink" href="#episode-termination" title="Link to this heading">¶</a></h2>
+<p>The environment is stateless, so there are no episodes. Each “episode” is therefore terminated after each timestep.</p>
+</section>
+<section id="episode-truncation">
+<h2>Episode Truncation<a class="headerlink" href="#episode-truncation" title="Link to this heading">¶</a></h2>
+<p>Episodes are not truncated as there are terminated after each timestep.</p>
+</section>
+<section id="arguments">
+<h2>Arguments<a class="headerlink" href="#arguments" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">render_mode</span> <span class="pre">(str,</span> <span class="pre">optional)</span></code>: The mode to display the rendering of the environment. Can be human or None.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">problem_name</span> <span class="pre">(str,</span> <span class="pre">optional)</span></code>: The name of the road network that will be used.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_agents</span> <span class="pre">(int,</span> <span class="pre">optional)</span></code>: The number of drivers in the network.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">toll_mode</span> <span class="pre">(str,</span> <span class="pre">optional)</span></code>: The tolling mode that is used, tolls are either placed randomly “random” or using marginal cost tolling “mct”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">random_toll_percentage</span> <span class="pre">(float,</span> <span class="pre">optional)</span></code>: In the case of random tolling the percentage of roads that will be taxed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_timesteps</span> <span class="pre">(int,</span> <span class="pre">optional)</span></code>: The number of timesteps (stateless, therefore always 1 timestep).</p></li>
+</ul>
+</section>
+<section id="credits">
+<h2>Credits<a class="headerlink" href="#credits" title="Link to this heading">¶</a></h2>
+<p>The code was adapted from <a class="reference external" href="https://github.com/goramos/marl-route-choice">codebase of “Toll-Based Learning for Minimising Congestion under Heterogeneous Preferences”</a>.</p>
+</section>
 </section>
 
           </article>
@@ -380,8 +420,34 @@ These attributes should not be changed after initialization.</p></li>
           
         </footer>
       </div>
-      <aside class="toc-drawer no-toc">
+      <aside class="toc-drawer">
         
+        
+        <div class="toc-sticky toc-scroll">
+          <div class="toc-title-container">
+            <span class="toc-title">
+              On this page
+            </span>
+          </div>
+          <div class="toc-tree-container">
+            <div class="toc-tree">
+              <ul>
+<li><a class="reference internal" href="#">MO-RouteChoice</a><ul>
+<li><a class="reference internal" href="#observation-space">Observation Space</a></li>
+<li><a class="reference internal" href="#action-space">Action Space</a></li>
+<li><a class="reference internal" href="#reward-space">Reward Space</a></li>
+<li><a class="reference internal" href="#starting-state">Starting State</a></li>
+<li><a class="reference internal" href="#episode-termination">Episode Termination</a></li>
+<li><a class="reference internal" href="#episode-truncation">Episode Truncation</a></li>
+<li><a class="reference internal" href="#arguments">Arguments</a></li>
+<li><a class="reference internal" href="#credits">Credits</a></li>
+</ul>
+</li>
+</ul>
+
+            </div>
+          </div>
+        </div>
         
         
       </aside>
