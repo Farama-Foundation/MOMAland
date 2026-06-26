@@ -57,7 +57,7 @@ learning = [
 all = [
     "momaland[learning]",
 ]
-testing = ["pytest ==7.1.3"]
+testing = ["pytest == 9.0.3"]
 
 [project.urls]
 Homepage = "https://momaland.farama.org/"
