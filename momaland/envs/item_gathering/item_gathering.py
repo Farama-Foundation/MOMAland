@@ -256,7 +256,9 @@ class MOItemGathering(MOParallelEnv, EzPickle):
             warn("You are calling render method without specifying any render mode.")
             return
         if self.window is None:
-            pygame.init()
+            # pygame.init() also starts the unused audio mixer and joystick subsystems, whose device
+            # enumeration adds ~0.4s of startup (see Farama-Foundation/MOMAland#71). Only the display
+            # is needed, and it is initialized on the human render path below.
             get_colored("item", len(self.item_dict))
             get_colored("agent", len(self.agents))
 
