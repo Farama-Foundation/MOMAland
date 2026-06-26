@@ -1,9 +1,11 @@
 import os
 import pickle
 
+import numpy as np
 import pytest
 from pettingzoo.test import parallel_api_test, seed_test
 
+from momaland.envs.samegame import mosame_game_v0
 from momaland.test.api_test import api_test
 
 # from momaland.test.wrapper_test import wrapper_test
@@ -26,3 +28,15 @@ def test_module(name, env_module):
     recreated_env = pickle.loads(pickle.dumps(_env))
     # TODO recreated_env.seed(42)
     api_test(recreated_env)
+
+
+def test_samegame_reset_reproducible():
+    env = mosame_game_v0.env(render_mode=None)
+    env.reset()
+    first_board, *_ = env.last()
+    env.reset()
+    second_board, *_ = env.last()
+
+    assert np.array_equal(
+        first_board["observation"], second_board["observation"]
+    ), "no-seed reset() must reproduce the same board."
