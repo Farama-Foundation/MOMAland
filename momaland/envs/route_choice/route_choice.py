@@ -321,7 +321,7 @@ class MORouteChoice(MOParallelEnv, EzPickle):
             # load the .json
             data = json.load(graph_json)
             # - Graph -#
-            graph = nx.node_link_graph(data["graph"])
+            graph = nx.node_link_graph(data["graph"], edges="links")
             # - Origin/Destination pairs -#
             od = data["od"]
             # - Possible routes for OD pairs -#
