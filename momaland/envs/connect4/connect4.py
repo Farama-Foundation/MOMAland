@@ -306,9 +306,11 @@ class MOConnect4(MOAECEnv, EzPickle):
         screen_height = 86 / 99 * screen_width
 
         if self.screen is None:
-            pygame.init()
-
             if self.render_mode == "human":
+                # Only initialize the display subsystem on the human render path. pygame.init() also
+                # starts the unused audio mixer and joystick subsystems, whose device enumeration adds
+                # ~0.4s of startup (see Farama-Foundation/MOMAland#71).
+                pygame.display.init()
                 pygame.display.set_caption("Connect Four")
                 self.screen = pygame.display.set_mode((screen_width, screen_height))
             else:
