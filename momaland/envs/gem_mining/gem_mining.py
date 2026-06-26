@@ -277,7 +277,9 @@ class MOGemMining(MOParallelEnv, EzPickle):
         # First, calculate the number of workers ending up at each mine:
         workers_at_mine = np.zeros(self.num_mines, dtype=np.int32)
         for agent, mine in actions.items():
-            workers_at_mine[mine] = workers_at_mine[mine] + self.workers[agent]
+            # self.workers[agent] is a 1-element list (random.choices(...) returns a list); index it
+            # so we add a scalar. numpy >= 2 raises "setting an array element with a sequence" otherwise.
+            workers_at_mine[mine] = workers_at_mine[mine] + self.workers[agent][0]
         # The rewards are based on Bernoulli (binomial(1)) experiments per mine per objective
         reward_vec = np.zeros(self.num_objectives, dtype=np.float32)
         for i in range(self.num_mines):
