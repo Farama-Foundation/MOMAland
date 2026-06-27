@@ -177,7 +177,7 @@ class MOGemMining(MOParallelEnv, EzPickle):
 
         # determine the number of workers per village (agent):
         lst = list(range(min_workers, max_workers + 1))
-        self.workers = {agent: self.random.choices(lst) for agent in self.agents}
+        self.workers = {agent: self.random.choice(lst) for agent in self.agents}
 
         # determine the base probabilities of finding a gem per type per mine
         self.base_probabilities = dict()
