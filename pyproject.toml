@@ -20,13 +20,14 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     'Intended Audience :: Science/Research',
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
 ]
 dependencies = [
     "gymnasium >=1.1.0",
     "pettingzoo[sisl,butterfly] >=1.24.0",
-    "numpy >=1.21.0",
+    "numpy >=2.0.0",
     "networkx >=3.4",
     "sympy >=1.12",
     "pygame-ce >=2.3.0",
@@ -50,7 +51,7 @@ learning = [
     "tqdm >=4.67.1",
     "pandas >=2.0.3",
     "matplotlib >=3.10.0",
-    "morl_baselines[all] >=1.1.0",
+    "morl_baselines[all] >=1.3.0",
     "pycddlib==2.1.6",
     "wandb >=0.16.1",
 ]
@@ -82,7 +83,7 @@ momaland = [
 
 [tool.black]
 line-length = 127
-target-version = ['py310', 'py311', 'py312']
+target-version = ['py310', 'py311', 'py312', 'py313']
 include = '\.pyi?$'
 
 [tool.isort]

@@ -170,7 +170,7 @@ class MOSameGame(MOAECEnv, EzPickle):
         self.env = super().__init__()
 
         self.rng = np.random.default_rng()
-        self.rng_initial_state = self.rng.__getstate__()
+        self.rng_initial_state = self.rng.bit_generator.state
         self.gameinfo = {}
         self.gameinfo["ncolors"] = num_colors
         self.gameinfo["boardcols"] = board_width
@@ -348,7 +348,7 @@ class MOSameGame(MOAECEnv, EzPickle):
     @override
     def reset(self, seed=None, options=None):
         if seed is None:
-            self.rng.__setstate__(self.rng_initial_state)
+            self.rng.bit_generator.state = self.rng_initial_state
         else:
             self.rng = np.random.default_rng(seed)
         self.agents = self.possible_agents[:]
