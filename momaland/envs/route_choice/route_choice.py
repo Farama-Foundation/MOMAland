@@ -12,6 +12,7 @@ from typing_extensions import override
 
 import networkx as nx
 import numpy as np
+import pygame
 from gymnasium.logger import warn
 from gymnasium.spaces import Box, Discrete
 from gymnasium.utils import EzPickle
@@ -20,6 +21,16 @@ from sympy import diff, lambdify, sympify
 
 from momaland.utils.conversions import mo_parallel_to_aec
 from momaland.utils.env import MOParallelEnv
+
+
+def _flow_color(ratio):
+    """Maps a congestion ratio in [0, 1] to an RGB color, green (free) -> yellow -> red (congested)."""
+    ratio = min(max(ratio, 0.0), 1.0)
+    if ratio < 0.5:
+        t = ratio / 0.5
+        return (int(60 + t * 180), int(180 + t * 30), int(75 - t * 25))
+    t = (ratio - 0.5) / 0.5
+    return (int(240 - t * 30), int(210 - t * 160), int(50))
 
 
 def parallel_env(**kwargs):
@@ -170,7 +181,14 @@ class MORouteChoice(MOParallelEnv, EzPickle):
         self.cost_function = dict()
         self._create_latency_and_cost_function(nx.get_edge_attributes(self.graph, "latency_function"), num_agents)
 
-    metadata = {"render_modes": ["human"], "name": "moroute_choice_v0"}
+        # pygame rendering
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.window_size = (760, 560)
+        self.window = None
+        self.clock = None
+        self._node_pos = None  # pixel positions of the network nodes, computed lazily on first render
+
+    metadata = {"render_modes": ["human", "rgb_array"], "name": "moroute_choice_v0", "render_fps": 2}
 
     # this cache ensures that same space object is returned for the same agent
     # allows action space seeding to work as expected
@@ -190,9 +208,130 @@ class MORouteChoice(MOParallelEnv, EzPickle):
 
     @override
     def render(self):
+        """Renders the road network and the current congestion on each link.
+
+        Nodes are the junctions of the network; origin nodes are outlined in green and destination
+        nodes in red (from the OD pairs). Each directed link is drawn as an arrow whose width and
+        color encode its current flow (the number of drivers on it), from green (free flowing) to
+        red (congested), making the cost of congestion - the core of Braess' paradox - visible. The
+        link flow and the average travel time are printed on the frame.
+
+        In "human" mode a window is opened and updated in place. In "rgb_array" mode the frame is
+        returned as a `(height, width, 3)` uint8 numpy array for GIF generation.
+        """
         if self.render_mode is None:
             warn("You are calling render method without specifying any render mode.")
             return
+
+        if self.window is None:
+            # Only initialize the subsystems actually used (display + font). pygame.init() also starts
+            # the audio mixer and joystick subsystems, whose device enumeration adds ~0.4s of startup
+            # (see Farama-Foundation/MOMAland#71). The display is initialized in the human branch only.
+            pygame.font.init()
+            if self.render_mode == "human":
+                pygame.display.init()
+                pygame.display.set_caption("MO-RouteChoice")
+                self.window = pygame.display.set_mode(self.window_size)
+            else:  # rgb_array
+                self.window = pygame.Surface(self.window_size)
+            if self.clock is None:
+                self.clock = pygame.time.Clock()
+        if self._node_pos is None:
+            self._node_pos = self._compute_node_positions()
+
+        title_font = pygame.font.SysFont("Arial", 18, bold=True)
+        font = pygame.font.SysFont("Arial", 13)
+
+        # Origin and destination nodes, parsed from the "origin|destination" OD pairs.
+        origins = {pair.split("|")[0] for pair in self.od}
+        destinations = {pair.split("|")[1] for pair in self.od}
+
+        max_flow = max([*self.flows.values(), 1])
+
+        self.window.fill((245, 245, 240))
+        self.window.blit(title_font.render("MO-RouteChoice  -  link congestion", True, (20, 20, 20)), (16, 12))
+        self.window.blit(
+            font.render(f"average travel time: {self.avg_tt:.3f}    drivers: {len(self.possible_agents)}", True, (60, 60, 60)),
+            (16, 38),
+        )
+
+        node_radius = 20
+        for u, v in self.graph.edges:
+            flow = self.flows.get(f"{u}-{v}", 0)
+            ratio = flow / max_flow
+            start = np.array(self._node_pos[u], dtype=float)
+            end = np.array(self._node_pos[v], dtype=float)
+            direction = end - start
+            length = np.linalg.norm(direction)
+            if length > 0:
+                direction = direction / length
+            # Stop the arrow at the node circles rather than at their centers.
+            p0 = start + direction * node_radius
+            p1 = end - direction * node_radius
+            color = _flow_color(ratio)
+            pygame.draw.line(self.window, color, p0, p1, 3 + int(ratio * 9))
+            self._draw_arrowhead(p1, direction, color)
+            mid = (p0 + p1) / 2
+            self.window.blit(font.render(str(int(flow)), True, (20, 20, 20)), (mid[0] + 4, mid[1] - 18))
+
+        for node, (x, y) in self._node_pos.items():
+            if node in origins:
+                ring_color, label = (40, 160, 60), "O"
+            elif node in destinations:
+                ring_color, label = (200, 50, 50), "D"
+            else:
+                ring_color, label = (120, 120, 120), ""
+            pygame.draw.circle(self.window, (255, 255, 255), (int(x), int(y)), node_radius)
+            pygame.draw.circle(self.window, ring_color, (int(x), int(y)), node_radius, 4)
+            txt = font.render(f"{node}{(' ' + label) if label else ''}", True, (20, 20, 20))
+            self.window.blit(txt, (int(x) - txt.get_width() // 2, int(y) - txt.get_height() // 2))
+
+        # Congestion legend.
+        for i, (lbl, ratio) in enumerate([("free", 0.0), ("busy", 0.5), ("congested", 1.0)]):
+            ly = self.window_size[1] - 24
+            lx = 16 + i * 130
+            pygame.draw.line(self.window, _flow_color(ratio), (lx, ly), (lx + 28, ly), 3 + int(ratio * 9))
+            self.window.blit(font.render(lbl, True, (60, 60, 60)), (lx + 34, ly - 8))
+
+        if self.render_mode == "human":
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+        elif self.render_mode == "rgb_array":
+            return np.transpose(np.array(pygame.surfarray.pixels3d(self.window)), axes=(1, 0, 2))
+
+    def _compute_node_positions(self):
+        """Returns a dict mapping each node to its pixel position, using a deterministic spring layout."""
+        layout = nx.spring_layout(self.graph, seed=42)
+        xs = [p[0] for p in layout.values()]
+        ys = [p[1] for p in layout.values()]
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+        margin = 70
+        width = self.window_size[0] - 2 * margin
+        height = self.window_size[1] - 2 * margin - 30  # leave room for the title
+        positions = {}
+        for node, (x, y) in layout.items():
+            nx_ = (x - min_x) / (max_x - min_x) if max_x > min_x else 0.5
+            ny_ = (y - min_y) / (max_y - min_y) if max_y > min_y else 0.5
+            positions[node] = (margin + nx_ * width, margin + 30 + ny_ * height)
+        return positions
+
+    def _draw_arrowhead(self, tip, direction, color):
+        """Draws a small triangular arrowhead at `tip` pointing along `direction`."""
+        perp = np.array([-direction[1], direction[0]])
+        base = tip - direction * 12
+        left = base + perp * 6
+        right = base - perp * 6
+        pygame.draw.polygon(self.window, color, [tip, left, right])
+
+    @override
+    def close(self):
+        """Closes the rendering window."""
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
+            self.window = None
 
     @override
     def reset(self, seed=None, options=None):
