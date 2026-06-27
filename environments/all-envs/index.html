@@ -323,42 +323,6 @@ More information are available in the <a class="reference external" href="https:
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/mobeach/"><code class="docutils literal notranslate"><span class="pre">mo-beach-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mobeach.gif" width="400px"></p></td>
-<td><p>Any</p></td>
-<td><p>Discrete / Discrete</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">[occupation,</span> <span class="pre">mixture]</span></code></p></td>
-<td><p>Taken from <a class="reference external" href="https://www.cambridge.org/core/journals/knowledge-engineering-review/article/reward-shaping-for-knowledgebased-multiobjective-multiagent-reinforcement-learning/75F1507F7CAC7C6625F87AE7CD344D52">Mannion_2018</a>. MO-Beach is a game with two objectives, reflecting the enjoyment of tourists (agents) on their respective beach sections in terms of crowdedness and diversity of attendees. Each beach section is characterised by a capacity and each agent is characterised by a type.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://momaland.farama.org/environments/moitem_gathering/"><code class="docutils literal notranslate"><span class="pre">mo-item-gathering-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/moitem_gathering.gif" width="400px"></p></td>
-<td><p>Adversarial</p></td>
-<td><p>Discrete / Discrete</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">[#objects]</span></code> (configurable)</p></td>
-<td><p>Adapted from <a class="reference external" href="https://www.diva-portal.org/smash/get/diva2:1362933/FULLTEXT01.pdf">Kallstrom_2019</a>, is a multi-agent grid world, containing items of different colours. Each colour represents a different objective and the goal of the agents is to collect as many objects as possible.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/mogem_mining/"><code class="docutils literal notranslate"><span class="pre">mo-gem-mining-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mogem_mining.gif" width="400px"></p></td>
-<td><p>Cooperative</p></td>
-<td><p>- / Discrete</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">[#gems]</span></code> (configurable)</p></td>
-<td><p>MO version of Gem Mining <a class="reference external" href="https://proceedings.mlr.press/v80/bargiacchi18a/bargiacchi18a.pdf">Bargiacchi_2018</a>. Agents go to different mines to extract different gems (objectives). There are restrictions on which mines can be reached for each agent. Agents also influence each other’s producitivity.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://momaland.farama.org/environments/moroute_choice/"><code class="docutils literal notranslate"><span class="pre">mo-route_choice-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mo_routechoice.gif" width="400px"></p></td>
-<td><p>Adversarial</p></td>
-<td><p>- / Discrete</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">[travel</span> <span class="pre">time,</span> <span class="pre">cost]</span></code></p></td>
-<td><p>MO-RouteChoice is a multi-objective extension of the route choice problem <a class="reference external" href="https://alaworkshop2023.github.io/papers/ALA2023_paper_69.pdf">Thomasini_2023</a>, where a number of self-interested drivers (agents) must navigate a road network.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/mopistonball/"><code class="docutils literal notranslate"><span class="pre">mo-pistonball-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mopistonball.gif" width="400px"></p></td>
-<td><p>Cooperative</p></td>
-<td><p>Continuous / Any</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">[agent_#n_reward]</span></code> (configurable)</p></td>
-<td><p>An MO version of <a class="reference external" href="https://pettingzoo.farama.org/environments/butterfly/pistonball/">PZ’s Pistonball</a> where the reward of each agent is kept separate.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://momaland.farama.org/environments/momultiwalker_stability/"><code class="docutils literal notranslate"><span class="pre">mo-multiwalker-stability-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/momultiwalker.gif" width="400px"></p></td>
-<td><p>Cooperative</p></td>
-<td><p>Continuous / Continuous</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">[progress</span> <span class="pre">right,</span> <span class="pre">package</span> <span class="pre">stability]</span></code></p></td>
-<td><p>A MO version of <a class="reference external" href="https://pettingzoo.farama.org/environments/sisl/multiwalker/">PZ’s MultiWalker</a> introduced in <a class="reference external" href="https://link.springer.com/chapter/10.1007/978-3-319-71682-4_5">Gupta_2017</a>, where the agents also seek to keep the package steady.</p></td>
-</tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/catch/"><code class="docutils literal notranslate"><span class="pre">catch-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/catch.gif" width="400px"></p></td>
 <td><p>Cooperative</p></td>
 <td><p>Continuous / Continuous</p></td>
@@ -371,11 +335,11 @@ More information are available in the <a class="reference external" href="https:
 <td><p><code class="docutils literal notranslate"><span class="pre">[distance_target,</span> <span class="pre">distance_other_drones]</span></code></p></td>
 <td><p>Agents must circle around a mobile target drone and escort it to its destination without breaking formation while maintaining distance between themselves.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/surround/"><code class="docutils literal notranslate"><span class="pre">surround-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/surround.gif" width="400px"></p></td>
-<td><p>Cooperative</p></td>
-<td><p>Continuous / Continuous</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">[distance_target,</span> <span class="pre">distance_other_drones]</span></code></p></td>
-<td><p>Agents must surround a fixed target point while maintaining distance between themselves.</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/mobeach/"><code class="docutils literal notranslate"><span class="pre">mo-beach-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mobeach.gif" width="400px"></p></td>
+<td><p>Any</p></td>
+<td><p>Discrete / Discrete</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[occupation,</span> <span class="pre">mixture]</span></code></p></td>
+<td><p>Taken from <a class="reference external" href="https://www.cambridge.org/core/journals/knowledge-engineering-review/article/reward-shaping-for-knowledgebased-multiobjective-multiagent-reinforcement-learning/75F1507F7CAC7C6625F87AE7CD344D52">Mannion_2018</a>. MO-Beach is a game with two objectives, reflecting the enjoyment of tourists (agents) on their respective beach sections in terms of crowdedness and diversity of attendees. Each beach section is characterised by a capacity and each agent is characterised by a type.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://momaland.farama.org/environments/mobreakthrough/"><code class="docutils literal notranslate"><span class="pre">mo-breakthrough-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mobreakthrough.gif" width="400px"></p></td>
 <td><p>Adversarial</p></td>
@@ -389,17 +353,53 @@ More information are available in the <a class="reference external" href="https:
 <td><p><code class="docutils literal notranslate"><span class="pre">[win,</span> <span class="pre">fast</span> <span class="pre">win,</span> <span class="pre">[column</span> <span class="pre">#n]]</span></code></p></td>
 <td><p>MO version of <a class="reference external" href="https://en.wikipedia.org/wiki/Connect_Four">Connect 4</a>. Additional objectives are fast win and optionally one objective per column.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://momaland.farama.org/environments/moingenious/"><code class="docutils literal notranslate"><span class="pre">mo-ingenious-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/ingenious.gif" width="400px"></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://momaland.farama.org/environments/mogem_mining/"><code class="docutils literal notranslate"><span class="pre">mo-gem-mining-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mogem_mining.gif" width="400px"></p></td>
+<td><p>Cooperative</p></td>
+<td><p>- / Discrete</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[#gems]</span></code> (configurable)</p></td>
+<td><p>MO version of Gem Mining <a class="reference external" href="https://proceedings.mlr.press/v80/bargiacchi18a/bargiacchi18a.pdf">Bargiacchi_2018</a>. Agents go to different mines to extract different gems (objectives). There are restrictions on which mines can be reached for each agent. Agents also influence each other’s producitivity.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/moingenious/"><code class="docutils literal notranslate"><span class="pre">mo-ingenious-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/ingenious.gif" width="400px"></p></td>
 <td><p>Any</p></td>
 <td><p>Discrete / Discrete</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">[#colors]</span></code> (configurable)</p></td>
 <td><p>MO adaptation of the zero-sum, turn-based board game <a class="reference external" href="https://en.wikipedia.org/wiki/Ingenious_(board_game)">Ingenious</a>. The game’s original rules support 2-4 players collecting scores in multiple colors (objectives), with the goal of winning by maximizing the minimum score over all colors. In MO-Ingenious, we leave the utility wrapper up to the users and only return the vector of scores in each colour objective.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/mosame_game/"><code class="docutils literal notranslate"><span class="pre">mo-same-game-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mosame_game.gif" width="400px"></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://momaland.farama.org/environments/moitem_gathering/"><code class="docutils literal notranslate"><span class="pre">mo-item-gathering-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/moitem_gathering.gif" width="400px"></p></td>
+<td><p>Adversarial</p></td>
+<td><p>Discrete / Discrete</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[#objects]</span></code> (configurable)</p></td>
+<td><p>Adapted from <a class="reference external" href="https://www.diva-portal.org/smash/get/diva2:1362933/FULLTEXT01.pdf">Kallstrom_2019</a>, is a multi-agent grid world, containing items of different colours. Each colour represents a different objective and the goal of the agents is to collect as many objects as possible.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/momultiwalker_stability/"><code class="docutils literal notranslate"><span class="pre">mo-multiwalker-stability-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/momultiwalker.gif" width="400px"></p></td>
+<td><p>Cooperative</p></td>
+<td><p>Continuous / Continuous</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[progress</span> <span class="pre">right,</span> <span class="pre">package</span> <span class="pre">stability]</span></code></p></td>
+<td><p>A MO version of <a class="reference external" href="https://pettingzoo.farama.org/environments/sisl/multiwalker/">PZ’s MultiWalker</a> introduced in <a class="reference external" href="https://link.springer.com/chapter/10.1007/978-3-319-71682-4_5">Gupta_2017</a>, where the agents also seek to keep the package steady.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://momaland.farama.org/environments/mopistonball/"><code class="docutils literal notranslate"><span class="pre">mo-pistonball-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mopistonball.gif" width="400px"></p></td>
+<td><p>Cooperative</p></td>
+<td><p>Continuous / Any</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[agent_#n_reward]</span></code> (configurable)</p></td>
+<td><p>An MO version of <a class="reference external" href="https://pettingzoo.farama.org/environments/butterfly/pistonball/">PZ’s Pistonball</a> where the reward of each agent is kept separate.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/moroute_choice/"><code class="docutils literal notranslate"><span class="pre">mo-route_choice-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mo_routechoice.gif" width="400px"></p></td>
+<td><p>Adversarial</p></td>
+<td><p>- / Discrete</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[travel</span> <span class="pre">time,</span> <span class="pre">cost]</span></code></p></td>
+<td><p>MO-RouteChoice is a multi-objective extension of the route choice problem <a class="reference external" href="https://alaworkshop2023.github.io/papers/ALA2023_paper_69.pdf">Thomasini_2023</a>, where a number of self-interested drivers (agents) must navigate a road network.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://momaland.farama.org/environments/mosame_game/"><code class="docutils literal notranslate"><span class="pre">mo-same-game-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/mosame_game.gif" width="400px"></p></td>
 <td><p>Any</p></td>
 <td><p>Discrete / Discrete</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">[colors_n]</span></code> (configurable)</p></td>
 <td><p>MO-SameGame is a multi-objective, multi-agent variant of the single-player, single-objective turn-based puzzle game called SameGame <a class="reference external" href="https://project.dke.maastrichtuniversity.nl/games/files/phd/Baier_thesis.pdf">Baier_2015</a>.      The original single-player, single-objective SameGame rewards the player with <span class="math notranslate nohighlight">\(n^2\)</span> points for removing any group of <span class="math notranslate nohighlight">\(n\)</span> tiles. MO-SameGame can extend this in two ways. Agents can either only get points for their own actions, leading to competition between them, or all rewards can be shared in ``team reward’’ mode. Additionally, points for every colour can be counted as separate objectives, allowing for different trade-offs between colours, or they can be accumulated in a single objective like in the default game variant, essentially providing a single-objective wrapper for the game.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://momaland.farama.org/environments/surround/"><code class="docutils literal notranslate"><span class="pre">surround-v0</span></code></a> <br><img src="https://momaland.farama.org/_static/gifs/surround.gif" width="400px"></p></td>
+<td><p>Cooperative</p></td>
+<td><p>Continuous / Continuous</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[distance_target,</span> <span class="pre">distance_other_drones]</span></code></p></td>
+<td><p>Agents must surround a fixed target point while maintaining distance between themselves.</p></td>
 </tr>
 </tbody>
 </table>
