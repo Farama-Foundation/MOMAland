@@ -43,4 +43,5 @@ jobs:
         with:
           folder: _build
           branch: gh-pages
+          target-folder: main
           clean: false
