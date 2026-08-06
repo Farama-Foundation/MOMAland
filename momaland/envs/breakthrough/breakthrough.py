@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing_extensions import override
 
 import numpy as np
+import pygame
 from gymnasium import spaces
 from gymnasium.logger import warn
 from gymnasium.utils import EzPickle
@@ -110,9 +111,10 @@ class MOBreakthrough(MOAECEnv, EzPickle):
     """
 
     metadata = {
-        "render_modes": ["ansi"],
+        "render_modes": ["ansi", "human", "rgb_array"],
         "name": "mobreakthrough_v0",
         "is_parallelizable": False,
+        "render_fps": 4,
     }
 
     OFF_BOARD = -1
@@ -188,6 +190,15 @@ class MOBreakthrough(MOAECEnv, EzPickle):
             dtype=np.float32,
         )
 
+        # pygame rendering
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self._cell = max(22, min(56, 520 // max(board_width, board_height)))
+        self._header = 40
+        self._panel_w = 210
+        self.window_size = (board_width * self._cell + self._panel_w, board_height * self._cell + self._header)
+        self.window = None
+        self.clock = None
+
     @override
     def render(self):
         """Renders the environment.
@@ -201,6 +212,83 @@ class MOBreakthrough(MOAECEnv, EzPickle):
 
         if self.render_mode == "ansi":
             self.print_board()
+            return
+
+        # human / rgb_array: draw the board as a checkerboard with colored pieces per player.
+        cols, rows, cell = self.board_width, self.board_height, self._cell
+        if self.window is None:
+            # Lightweight init: only the subsystems used (display + font), and the display only on the
+            # human path. pygame.init() would also start the unused audio/joystick subsystems (#71).
+            pygame.font.init()
+            if self.render_mode == "human":
+                pygame.display.init()
+                pygame.display.set_caption("MO-Breakthrough")
+                self.window = pygame.display.set_mode(self.window_size)
+            else:  # rgb_array
+                self.window = pygame.Surface(self.window_size)
+            if self.clock is None:
+                self.clock = pygame.time.Clock()
+
+        title_font = pygame.font.SysFont("Arial", 18, bold=True)
+        font = pygame.font.SysFont("Arial", 14)
+        small_font = pygame.font.SysFont("Arial", 12)
+
+        light, dark = (236, 223, 200), (181, 148, 107)
+        p_color = {1: (60, 110, 205), 2: (210, 70, 70)}  # player_0, player_1
+        header = self._header
+
+        self.window.fill((247, 245, 238))
+        self.window.blit(title_font.render("MO-Breakthrough", True, (20, 20, 20)), (10, 10))
+
+        radius = int(cell * 0.36)
+        for col in range(cols):
+            for row in range(rows):
+                # Draw row 0 at the bottom so player_0 (which starts low and advances upward) is at the bottom.
+                sx = col * cell
+                sy = header + (rows - 1 - row) * cell
+                pygame.draw.rect(self.window, light if (col + row) % 2 == 0 else dark, pygame.Rect(sx, sy, cell, cell))
+                piece = int(self.board[col][row])
+                if piece != 0:
+                    center = (sx + cell // 2, sy + cell // 2)
+                    pygame.draw.circle(self.window, p_color[piece], center, radius)
+                    pygame.draw.circle(self.window, (30, 30, 30), center, radius, 2)
+
+        # Side panel: turn / winner, move count, pieces left, objectives.
+        panel_x = cols * cell + 16
+        p0_left = int((self.board == 1).sum())
+        p1_left = int((self.board == 2).sum())
+        game_over = any(self.terminations.values())
+
+        y = header + 6
+        if game_over:
+            # The winner is whoever still has pieces / reached the far row; infer it from the board.
+            if 1 in self.board[:, rows - 1] or p1_left == 0:
+                winner = "player_0"
+            else:
+                winner = "player_1"
+            self.window.blit(title_font.render(f"{winner} wins!", True, (20, 20, 20)), (panel_x, y))
+        else:
+            self.window.blit(font.render("to move:", True, (60, 60, 60)), (panel_x, y))
+            pidx = self.possible_agents.index(self.agent_selection)
+            pygame.draw.circle(self.window, p_color[pidx + 1], (panel_x + 80, y + 8), 8)
+            self.window.blit(font.render(self.agent_selection, True, (20, 20, 20)), (panel_x + 96, y))
+        y += 34
+
+        self.window.blit(font.render(f"move: {self.move_count}", True, (40, 40, 40)), (panel_x, y))
+        y += 26
+        for label, piece, left in [("player_0", 1, p0_left), ("player_1", 2, p1_left)]:
+            pygame.draw.circle(self.window, p_color[piece], (panel_x + 8, y + 8), 7)
+            self.window.blit(small_font.render(f"{label}: {left} pieces", True, (20, 20, 20)), (panel_x + 22, y))
+            y += 22
+        y += 8
+        self.window.blit(small_font.render(f"objectives: {self.num_objectives}", True, (90, 90, 90)), (panel_x, y))
+
+        if self.render_mode == "human":
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+        elif self.render_mode == "rgb_array":
+            return np.transpose(np.array(pygame.surfarray.pixels3d(self.window)), axes=(1, 0, 2))
 
     @override
     def observe(self, agent):  # currently using a fixed layer for the current player, instead of fixed layers by color
@@ -320,7 +408,10 @@ class MOBreakthrough(MOAECEnv, EzPickle):
     def close(self):
         """Close should release any graphical displays, subprocesses, network connections or any other environment
         data which should not be kept around after the user is no longer using the environment."""
-        pass
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
+            self.window = None
 
     def check_for_winner(self):
         """Checks if there is a winner and the game is over."""
