@@ -5,7 +5,10 @@ firstpage:
 ---
 
 # MO-GemMining
-
+```{figure} ../_static/gifs/mogem_mining.gif
+:width: 200px
+:name: mogem_mining
+```
 |   |   |
 |---|---|
 | Agents names | `agent_i for i in [0, 19]` |
