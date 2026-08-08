@@ -3,12 +3,14 @@
 From Mannion, P., Devlin, S., Duggan, J., and Howley, E. (2018). Reward shaping for knowledge-based multi-objective multi-agent reinforcement learning.
 """
 
+import colorsys
 import functools
 import random
 import warnings
 from typing_extensions import override
 
 import numpy as np
+import pygame
 from gymnasium.logger import warn
 from gymnasium.spaces import Box, Discrete
 from gymnasium.utils import EzPickle
@@ -100,9 +102,10 @@ class MOBeachDomain(MOParallelEnv, EzPickle):
     """
 
     metadata = {
-        "render_modes": ["human"],
+        "render_modes": ["human", "rgb_array"],
         "name": "mobeach_v0",
         "central_observation": True,
+        "render_fps": 5,
     }
 
     def __init__(
@@ -202,6 +205,14 @@ class MOBeachDomain(MOParallelEnv, EzPickle):
             )
         )
 
+        # pygame rendering
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.section_width = 150
+        self.window_size = (self.sections * self.section_width, 500)
+        self.window = None
+        self.clock = None
+        self.type_colors = None
+
     # this cache ensures that same space object is returned for the same agent
     # allows action space seeding to work as expected
     @functools.lru_cache(maxsize=None)
@@ -226,19 +237,119 @@ class MOBeachDomain(MOParallelEnv, EzPickle):
 
     @override
     def render(self):
-        """Renders the environment.
+        """Renders the environment as a top-down view of the beach.
 
-        In human mode, it can print to terminal, open
-        up a graphical window, or open up some other display that a human can see and understand.
+        Each beach section is drawn as a column with an ocean strip on top and sand below.
+        The agents standing in a section are drawn as circles, colored by their type, so that
+        both objectives of the domain are visible at a glance: how crowded a section is (the
+        occupation/capacity objective) and how well the agent types are mixed within it (the
+        mixture objective). A section whose occupation exceeds its capacity is outlined in red.
+
+        In "human" mode a window is opened and updated in place. In "rgb_array" mode the frame
+        is returned as a `(height, width, 3)` uint8 numpy array, which is what
+        `momaland/utils/generate_gif_image.py` uses to build the documentation GIFs.
         """
         if self.render_mode is None:
             warn("You are calling render method without specifying any render mode.")
             return
 
+        if self.window is None:
+            # Only initialize the subsystems actually used (display + font). pygame.init() also starts
+            # the audio mixer and joystick subsystems, whose device enumeration adds ~0.4s of startup
+            # (see Farama-Foundation/MOMAland#71). The display is initialized in the human branch only.
+            pygame.font.init()
+            if self.render_mode == "human":
+                pygame.display.init()
+                pygame.display.set_caption("MO-Beach Domain")
+                self.window = pygame.display.set_mode(self.window_size)
+            else:  # rgb_array
+                self.window = pygame.Surface(self.window_size)
+            if self.clock is None:
+                self.clock = pygame.time.Clock()
+        if self.type_colors is None:
+            self.type_colors = _generate_type_colors(len(self.type_distribution))
+
+        title_font = pygame.font.SysFont("Arial", 16, bold=True)
+        font = pygame.font.SysFont("Arial", 13)
+
+        # Count the agents (and their types) standing in each section. We read directly from
+        # self._state/self._types rather than from self.agents, because step() empties
+        # self.agents on the terminal timestep before calling render().
+        # Use len(self._state) rather than self.num_agents: the latter is len(self.agents), which is
+        # 0 after step() empties self.agents on the terminal timestep (and beach defaults to a single
+        # timestep, so the only render would otherwise be blank).
+        agents_per_section = [[] for _ in range(self.sections)]
+        for i in range(len(self._state)):
+            agents_per_section[self._state[i]].append(self._types[i])
+
+        sand_color = (237, 201, 175)
+        ocean_color = (64, 164, 223)
+        separator_color = (194, 178, 128)
+        width, height = self.window_size
+        ocean_height = int(height * 0.18)
+        label_height = 56
+
+        self.window.fill(sand_color)
+        pygame.draw.rect(self.window, ocean_color, pygame.Rect(0, 0, width, ocean_height))
+
+        # Type legend, drawn in the ocean strip.
+        for t, color in enumerate(self.type_colors):
+            lx = 12 + t * 90
+            pygame.draw.circle(self.window, color, (lx + 8, ocean_height // 2), 7)
+            self.window.blit(font.render(f"type {t}", True, (255, 255, 255)), (lx + 20, ocean_height // 2 - 8))
+
+        agent_area_top = ocean_height + 8
+        agent_area_bottom = height - label_height
+        for s in range(self.sections):
+            x0 = s * self.section_width
+            capacity = self.resource_capacities[s]
+            types_here = agents_per_section[s]
+            consumption = len(types_here)
+            over_capacity = consumption > capacity
+
+            # Lay the agents out on a square-ish grid inside the section.
+            if consumption > 0:
+                cols = int(np.ceil(np.sqrt(consumption)))
+                rows = int(np.ceil(consumption / cols))
+                cell_w = (self.section_width - 20) / cols
+                cell_h = (agent_area_bottom - agent_area_top) / rows
+                radius = max(3, int(min(cell_w, cell_h) * 0.32))
+                for k, t in enumerate(types_here):
+                    c, r = k % cols, k // cols
+                    cx = int(x0 + 10 + c * cell_w + cell_w / 2)
+                    cy = int(agent_area_top + r * cell_h + cell_h / 2)
+                    pygame.draw.circle(self.window, self.type_colors[t % len(self.type_colors)], (cx, cy), radius)
+                    pygame.draw.circle(self.window, (40, 40, 40), (cx, cy), radius, 1)
+
+            # Section border (red when over capacity) and labels.
+            border_color = (200, 40, 40) if over_capacity else separator_color
+            pygame.draw.rect(
+                self.window,
+                border_color,
+                pygame.Rect(x0, ocean_height, self.section_width, height - ocean_height),
+                4 if over_capacity else 1,
+            )
+            self.window.blit(title_font.render(f"Section {s}", True, (0, 0, 0)), (x0 + 8, height - label_height + 6))
+            count_color = (200, 40, 40) if over_capacity else (0, 90, 0)
+            self.window.blit(
+                font.render(f"{consumption}/{capacity} agents", True, count_color),
+                (x0 + 8, height - label_height + 28),
+            )
+
+        if self.render_mode == "human":
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+        elif self.render_mode == "rgb_array":
+            return np.transpose(np.array(pygame.surfarray.pixels3d(self.window)), axes=(1, 0, 2))
+
     @override
     def close(self):
         """Close should release any graphical displays, subprocesses, network connections or any other environment data which should not be kept around after the user is no longer using the environment."""
-        pass
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
+            self.window = None
 
     @override
     def reset(self, seed=None, options=None):
@@ -384,6 +495,16 @@ class MOBeachDomain(MOParallelEnv, EzPickle):
             section_consumptions[self._state[i]] += 1
             section_agent_types[self._state[i]][self._types[i]] += 1
         return section_consumptions, section_agent_types
+
+
+def _generate_type_colors(num_types):
+    """Returns a list of `num_types` visually distinct RGB colors, evenly spaced around the hue wheel."""
+    colors = []
+    for i in range(num_types):
+        hue = i / max(num_types, 1)
+        r, g, b = colorsys.hsv_to_rgb(hue, 0.65, 0.9)
+        colors.append((int(r * 255), int(g * 255), int(b * 255)))
+    return colors
 
 
 def _global_capacity_reward(capacities, consumptions):
