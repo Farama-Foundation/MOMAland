@@ -64,17 +64,43 @@ dimensions.
 """
 
 import functools
+import math
 import random
 from typing_extensions import override
 
 import numpy as np
+import pygame
 from gymnasium.logger import warn
 from gymnasium.spaces import Box, Dict, Discrete
 from gymnasium.utils import EzPickle
 from pettingzoo.utils import wrappers
 
-from momaland.envs.ingenious.ingenious_base import ALL_COLORS, IngeniousBase
+from momaland.envs.ingenious.ingenious_base import (
+    ALL_COLORS,
+    Hex2ArrayLocation,
+    IngeniousBase,
+)
 from momaland.utils.env import MOAECEnv
+
+
+# RGB color for each tile value on the board: 0 = empty, 1-6 = the game colors (in ALL_COLORS order:
+# red, green, blue, orange, yellow, purple).
+_COLOR_RGB = [
+    (228, 226, 220),
+    (214, 64, 64),
+    (76, 175, 92),
+    (66, 110, 205),
+    (235, 150, 45),
+    (232, 206, 60),
+    (148, 82, 184),
+]
+
+
+def _hex_corners(cx, cy, size):
+    """Returns the 6 corner points of a pointy-top hexagon centered at (cx, cy)."""
+    return [
+        (cx + size * math.cos(math.radians(60 * i - 30)), cy + size * math.sin(math.radians(60 * i - 30))) for i in range(6)
+    ]
 
 
 def env(**kwargs):
@@ -101,7 +127,12 @@ def raw_env(**kwargs):
 class Ingenious(MOAECEnv, EzPickle):
     """Environment for the Ingenious board game."""
 
-    metadata = {"render_modes": ["human"], "name": "moingenious_v0", "is_parallelizable": False}
+    metadata = {
+        "render_modes": ["human", "rgb_array"],
+        "name": "moingenious_v0",
+        "is_parallelizable": False,
+        "render_fps": 3,
+    }
 
     def __init__(
         self,
@@ -204,6 +235,12 @@ class Ingenious(MOAECEnv, EzPickle):
         # The reward for each move is the difference between the previous and current score.
         self.reward_spaces = dict(zip(self.agents, [Box(0, self.game.max_score, shape=(self.num_colors,))] * num_agents))
 
+        # pygame rendering
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.window_size = (820, 560)
+        self.window = None
+        self.clock = None
+
     @functools.lru_cache(maxsize=None)
     @override
     def observation_space(self, agent):
@@ -221,14 +258,121 @@ class Ingenious(MOAECEnv, EzPickle):
 
     @override
     def render(self):
-        """Renders the environment.
+        """Renders the hexagonal Ingenious board and the per-color scores.
 
-        In human mode, it can print to terminal, open
-        up a graphical window, or open up some other display that a human can see and understand.
+        The board is drawn as a hexagon of hexagonal tiles, each filled with its placed color (empty
+        cells are grey). The right panel is the scoreboard: for every agent it shows the score reached
+        in each color - these colors are the objectives of the game - together with the minimum over
+        all colors, which is the quantity the original game asks players to maximize. The acting
+        agent's rack of tiles is drawn underneath the board.
+
+        In "human" mode a window is opened and updated in place. In "rgb_array" mode the frame is
+        returned as a `(height, width, 3)` uint8 numpy array for GIF generation.
         """
         if self.render_mode is None:
             warn("You are calling render method without specifying any render mode.")
             return
+
+        if self.window is None:
+            # Only initialize the subsystems actually used (display + font). pygame.init() also starts
+            # the audio mixer and joystick subsystems, whose device enumeration adds ~0.4s of startup
+            # (see Farama-Foundation/MOMAland#71). The display is initialized in the human branch only.
+            pygame.font.init()
+            if self.render_mode == "human":
+                pygame.display.init()
+                pygame.display.set_caption("MO-Ingenious")
+                self.window = pygame.display.set_mode(self.window_size)
+            else:  # rgb_array
+                self.window = pygame.Surface(self.window_size)
+            if self.clock is None:
+                self.clock = pygame.time.Clock()
+
+        title_font = pygame.font.SysFont("Arial", 18, bold=True)
+        font = pygame.font.SysFont("Arial", 14)
+        small_font = pygame.font.SysFont("Arial", 12)
+
+        board_size = self.game.board_size
+
+        # Lay the board out by computing unit-size pixel coordinates for every hex, then scaling
+        # them to fit the board area (between the title and the rack) and centering on the bounding
+        # box - this keeps the whole hexagon on screen for any board size.
+        board_w = 560
+        margin_top, rack_h = 46, 84
+        avail_w, avail_h = board_w - 20, self.window_size[1] - margin_top - rack_h
+        unit = {hx: (math.sqrt(3) * (hx.q + hx.r / 2), 1.5 * hx.r) for hx in self.game.board_hex}
+        xs = [p[0] for p in unit.values()]
+        ys = [p[1] for p in unit.values()]
+        min_x, max_x, min_y, max_y = min(xs), max(xs), min(ys), max(ys)
+        # +2 padding (one hex diameter in unit coordinates) so border hexes are not clipped.
+        hex_size = min(avail_w / (max_x - min_x + 2), avail_h / (max_y - min_y + 2))
+        origin_x = board_w / 2 - hex_size * (min_x + max_x) / 2
+        origin_y = margin_top + avail_h / 2 - hex_size * (min_y + max_y) / 2
+
+        self.window.fill((247, 245, 238))
+        self.window.blit(title_font.render("MO-Ingenious", True, (20, 20, 20)), (16, 12))
+
+        # Board hexes.
+        board_area = (board_w, self.window_size[1])
+        for hx in self.game.board_hex:
+            cx, cy = origin_x + hex_size * unit[hx][0], origin_y + hex_size * unit[hx][1]
+            ax, ay = Hex2ArrayLocation(hx, board_size)
+            color_val = int(self.game.board_array[ax][ay])
+            color = _COLOR_RGB[color_val] if 0 <= color_val < len(_COLOR_RGB) else (0, 0, 0)
+            corners = _hex_corners(cx, cy, hex_size * 0.95)
+            pygame.draw.polygon(self.window, color, corners)
+            pygame.draw.polygon(self.window, (90, 90, 90), corners, 1)
+
+        # Scoreboard panel.
+        panel_x = board_area[0] + 10
+        self.window.blit(title_font.render("Scores", True, (20, 20, 20)), (panel_x, 14))
+        row_y = 44
+        for i, agent in enumerate(self.possible_agents):
+            marker = ">" if agent == self.agent_selection else " "
+            self.window.blit(font.render(f"{marker} agent {i}", True, (20, 20, 20)), (panel_x, row_y))
+            row_y += 22
+            scores = self.game.score[agent]
+            for color_val in ALL_COLORS[: self.num_colors]:
+                score = scores[color_val]
+                pygame.draw.rect(self.window, _COLOR_RGB[color_val], pygame.Rect(panel_x + 12, row_y, 14, 14))
+                pygame.draw.rect(self.window, (80, 80, 80), pygame.Rect(panel_x + 12, row_y, 14, 14), 1)
+                # A small bar proportional to the score.
+                bar_w = int((score / self.game.max_score) * 120)
+                pygame.draw.rect(self.window, _COLOR_RGB[color_val], pygame.Rect(panel_x + 34, row_y, bar_w, 14))
+                self.window.blit(small_font.render(str(int(score)), True, (20, 20, 20)), (panel_x + 160, row_y))
+                row_y += 18
+            min_score = min(scores[c] for c in ALL_COLORS[: self.num_colors])
+            self.window.blit(small_font.render(f"min (utility): {int(min_score)}", True, (60, 60, 60)), (panel_x + 12, row_y))
+            row_y += 26
+
+        # Acting agent's rack, drawn as pairs of colored circles under the board.
+        rack = self.game.p_tiles.get(self.agent_selection, [])
+        rack_y = board_area[1] - 60
+        self.window.blit(
+            small_font.render(f"rack of agent {self.possible_agents.index(self.agent_selection)}:", True, (60, 60, 60)),
+            (16, rack_y - 18),
+        )
+        for t, tile in enumerate(rack):
+            tx = 20 + t * 70
+            for k, c in enumerate(tile):
+                c = int(c)
+                color = _COLOR_RGB[c] if 0 <= c < len(_COLOR_RGB) else (0, 0, 0)
+                pygame.draw.circle(self.window, color, (tx + k * 22, rack_y), 11)
+                pygame.draw.circle(self.window, (80, 80, 80), (tx + k * 22, rack_y), 11, 1)
+
+        if self.render_mode == "human":
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+        elif self.render_mode == "rgb_array":
+            return np.transpose(np.array(pygame.surfarray.pixels3d(self.window)), axes=(1, 0, 2))
+
+    @override
+    def close(self):
+        """Closes the rendering window."""
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
+            self.window = None
 
     @override
     def reset(self, seed=None, options=None):
@@ -301,6 +445,9 @@ class Ingenious(MOAECEnv, EzPickle):
             self.refresh_cumulative_reward = True
         else:
             self.refresh_cumulative_reward = False
+
+        if self.render_mode == "human":
+            self.render()
 
     @override
     def observe(self, agent):
