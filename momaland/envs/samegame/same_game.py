@@ -32,12 +32,29 @@ import sys
 from typing_extensions import override
 
 import numpy as np
+import pygame
 from gymnasium import spaces
 from gymnasium.logger import warn
 from gymnasium.utils import EzPickle
 from pettingzoo.utils import AgentSelector, wrappers
 
 from momaland.utils.env import MOAECEnv
+
+
+# RGB color for each tile value: index 0 is empty, 1-10 are the game colors.
+_COLOR_RGB = [
+    (236, 234, 228),
+    (214, 64, 64),
+    (66, 110, 205),
+    (76, 175, 92),
+    (232, 206, 60),
+    (148, 82, 184),
+    (235, 150, 45),
+    (74, 195, 205),
+    (214, 96, 170),
+    (140, 200, 70),
+    (150, 110, 80),
+]
 
 
 def env(**kwargs):
@@ -129,9 +146,10 @@ class MOSameGame(MOAECEnv, EzPickle):
     """
 
     metadata = {
-        "render_modes": ["ansi"],
+        "render_modes": ["ansi", "human", "rgb_array"],
         "name": "mosame_game_v0",
         "is_parallelizable": False,
+        "render_fps": 3,
     }
 
     BLANK = 0
@@ -223,6 +241,16 @@ class MOSameGame(MOAECEnv, EzPickle):
             )
         )
 
+        # pygame rendering
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self._cell = 30
+        self._panel_w = 240
+        self.window_size = (board_width * self._cell + self._panel_w, board_height * self._cell + 50)
+        self.window = None
+        self.clock = None
+        # running score per agent across the episode (the env zeroes _cumulative_rewards each step)
+        self._score_so_far = {agent: np.zeros(self.num_objectives) for agent in self.possible_agents}
+
     @override
     def render(self):
         """Renders the environment.
@@ -236,6 +264,76 @@ class MOSameGame(MOAECEnv, EzPickle):
 
         if self.render_mode == "ansi":
             self._print_board()
+            return
+
+        # human / rgb_array: draw the colored tile grid and a per-color score panel.
+        cols = self.gameinfo["boardcols"]
+        rows = self.gameinfo["boardrows"]
+        cell = self._cell
+
+        if self.window is None:
+            # Only initialize the subsystems actually used (display + font). pygame.init() also starts
+            # the audio mixer and joystick subsystems, whose device enumeration adds ~0.4s of startup
+            # (see Farama-Foundation/MOMAland#71). The display is initialized in the human branch only.
+            pygame.font.init()
+            if self.render_mode == "human":
+                pygame.display.init()
+                pygame.display.set_caption("MO-SameGame")
+                self.window = pygame.display.set_mode(self.window_size)
+            else:  # rgb_array
+                self.window = pygame.Surface(self.window_size)
+            if self.clock is None:
+                self.clock = pygame.time.Clock()
+
+        title_font = pygame.font.SysFont("Arial", 18, bold=True)
+        font = pygame.font.SysFont("Arial", 14)
+        small_font = pygame.font.SysFont("Arial", 12)
+
+        self.window.fill((247, 245, 238))
+        self.window.blit(title_font.render("MO-SameGame", True, (20, 20, 20)), (12, 12))
+
+        board = self.gameinfo["board"][self.gameinfo["curmove"]]
+        top = 40
+        # board[col][row]: row 0 is drawn at the top, matching the ansi renderer.
+        for col in range(cols):
+            for row in range(rows):
+                value = int(board[col][row])
+                if value == MOSameGame.BLANK:
+                    continue
+                color = _COLOR_RGB[value] if value < len(_COLOR_RGB) else (0, 0, 0)
+                rect = pygame.Rect(col * cell + 1, top + row * cell + 1, cell - 2, cell - 2)
+                pygame.draw.rect(self.window, color, rect, border_radius=4)
+
+        # Score panel.
+        panel_x = cols * cell + 16
+        self.window.blit(title_font.render("Scores", True, (20, 20, 20)), (panel_x, 14))
+        y = 44
+        for i, agent in enumerate(self.possible_agents):
+            marker = ">" if agent == self.agent_selection else " "
+            self.window.blit(font.render(f"{marker} agent {i}", True, (20, 20, 20)), (panel_x, y))
+            y += 22
+            score = self._score_so_far[agent]
+            for o in range(self.num_objectives):
+                # When color_rewards is on, each objective o is the tile color o+1.
+                swatch = _COLOR_RGB[o + 1] if self.color_rewards and o + 1 < len(_COLOR_RGB) else (90, 90, 90)
+                pygame.draw.rect(self.window, swatch, pygame.Rect(panel_x + 12, y, 14, 14))
+                pygame.draw.rect(self.window, (80, 80, 80), pygame.Rect(panel_x + 12, y, 14, 14), 1)
+                label = f"color {o + 1}" if self.color_rewards else "total"
+                self.window.blit(small_font.render(f"{label}: {int(score[o])}", True, (20, 20, 20)), (panel_x + 34, y))
+                y += 20
+            self.window.blit(small_font.render(f"sum: {int(score.sum())}", True, (40, 40, 40)), (panel_x + 12, y))
+            y += 26
+
+        tiles_left = self.gameinfo["cellsleft"]["total"]
+        self.window.blit(small_font.render(f"moves: {self.move_count}", True, (60, 60, 60)), (panel_x, y))
+        self.window.blit(small_font.render(f"tiles left: {tiles_left}", True, (60, 60, 60)), (panel_x, y + 18))
+
+        if self.render_mode == "human":
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+        elif self.render_mode == "rgb_array":
+            return np.transpose(np.array(pygame.surfarray.pixels3d(self.window)), axes=(1, 0, 2))
 
     @override
     def observe(self, agent):
@@ -304,7 +402,10 @@ class MOSameGame(MOAECEnv, EzPickle):
     def close(self):
         """Close should release any graphical displays, subprocesses, network connections or any other environment
         data which should not be kept around after the user is no longer using the environment."""
-        pass
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
+            self.window = None
 
     @override
     def step(self, action):
@@ -339,6 +440,10 @@ class MOSameGame(MOAECEnv, EzPickle):
         self._cumulative_rewards[agent] = np.zeros(self.num_objectives)
         self._accumulate_rewards()
 
+        # track a running per-agent score for rendering (_cumulative_rewards is zeroed each step)
+        for a in self.agents:
+            self._score_so_far[a] = self._score_so_far[a] + self.rewards[a]
+
         # select the next agent
         self.agent_selection = self._agent_selector.next()
         self.legal_moves = self._legal_moves()
@@ -358,6 +463,7 @@ class MOSameGame(MOAECEnv, EzPickle):
         self.truncations = {agent: False for agent in self.agents}
         self.infos = {agent: {} for agent in self.agents}
         self.move_count = 0
+        self._score_so_far = {agent: np.zeros(self.num_objectives) for agent in self.possible_agents}
         self._initialize_board()
         self.legal_moves = self._legal_moves()
 
