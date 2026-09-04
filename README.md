@@ -95,7 +95,7 @@ MOMAland keeps strict versioning for reproducibility reasons. All environments e
 We have a roadmap for future development available [here](https://github.com/Farama-Foundation/momaland/issues/56).
 
 ## Project Maintainers
-Project Managers:  Florian Felten (@ffelten)
+Project Managers:  Roxana Radulescu (@rradules)
 
 Maintenance for this project is also contributed by the broader Farama team: [farama.org/team](https://farama.org/team).
 
@@ -103,14 +103,15 @@ Maintenance for this project is also contributed by the broader Farama team: [fa
 <!-- start citation -->
 If you use this repository in your research, please cite:
 ```bibtex
-@misc{felten2024momaland,
-      title={MOMAland: A Set of Benchmarks for Multi-Objective Multi-Agent Reinforcement Learning},
-      author={Florian Felten and Umut Ucak and Hicham Azmani and Gao Peng and Willem Röpke and Hendrik Baier and Patrick Mannion and Diederik M. Roijers and Jordan K. Terry and El-Ghazali Talbi and Grégoire Danoy and Ann Nowé and Roxana Rădulescu},
-      year={2024},
-      eprint={2407.16312},
-      archivePrefix={arXiv},
-      primaryClass={cs.MA},
-      url={https://arxiv.org/abs/2407.16312},
+@article{felten2026momaland,
+  title   = {{MOMAland}: A Set of Benchmarks for Multi-Objective Multi-Agent Reinforcement Learning},
+  author  = {Florian Felten and Umut Ucak and Hicham Azmani and Gao Peng and Willem Röpke and Hendrik Baier and Patrick Mannion and Diederik M. Roijers and Jordan K. Terry and El-Ghazali Talbi and Grégoire Danoy and Ann Nowé and Roxana R\u{a}dulescu},
+  journal = {Journal of Data-centric Machine Learning Research},
+  year    = {2026},
+  volume  = {3},
+  number  = {15},
+  pages   = {1--49},
+  url     = {https://openreview.net/forum?id=vzHLRK0sSp}
 }
 ```
 <!-- end citation -->
