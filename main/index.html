@@ -337,7 +337,7 @@ An API standard for multi-objective multi-agent reinforcement learning (MOMARL)
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="c1"># .env() function will return an AEC environment, as per PZ standard</span>
-<span class="n">env</span> <span class="o">=</span> <span class="n">_env</span><span class="o">.</span><span class="n">env</span><span class="p">(</span><span class="n">render_mode</span><span class="o">=</span><span class="s2">&quot;human&quot;</span><span class="p">)</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">_env</span><span class="o">.</span><span class="n">env</span><span class="p">(</span><span class="n">render_mode</span><span class="o">=</span><span class="s2">"human"</span><span class="p">)</span>
 
 <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">agent</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">agent_iter</span><span class="p">():</span>
@@ -356,9 +356,9 @@ An API standard for multi-objective multi-agent reinforcement learning (MOMARL)
 <span class="c1"># Making the vector reward a scalar reward to shift to single-objective multi-agent (aka PettingZoo)</span>
 <span class="c1"># We can assign different weights to the objectives of each agent.</span>
 <span class="n">weights</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;walker_0&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">]),</span>
-    <span class="s2">&quot;walker_1&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]),</span>
-    <span class="s2">&quot;walker_2&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">]),</span>
+    <span class="s2">"walker_0"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">]),</span>
+    <span class="s2">"walker_1"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]),</span>
+    <span class="s2">"walker_2"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">]),</span>
 <span class="p">}</span>
 <span class="n">env</span> <span class="o">=</span> <span class="n">LinearizeReward</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">weights</span><span class="p">)</span>
 </pre></div>

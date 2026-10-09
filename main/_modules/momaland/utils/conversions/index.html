@@ -297,7 +297,7 @@
           <article role="main">
             
             <h1>Source code for momaland.utils.conversions</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Copied and pasted from PZ, adapted to handle vectorial rewards.&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""Copied and pasted from PZ, adapted to handle vectorial rewards."""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
@@ -316,11 +316,11 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">mo_aec_to_parallel</span><span class="p">(</span><span class="n">aec_env</span><span class="p">:</span> <span class="n">AECEnv</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParallelEnv</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a MO aec environment to a parallel environment.</span>
+<span class="w">    </span><span class="sd">"""Converts a MO aec environment to a parallel environment.</span>
 
 <span class="sd">    In the case of an existing parallel environment wrapped using a `parallel_to_aec_wrapper`, this function will return the original parallel environment.</span>
 <span class="sd">    Otherwise, it will apply the `aec_to_parallel_wrapper` to convert the environment.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">aec_env</span><span class="p">,</span> <span class="n">parallel_to_aec_wrapper</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">aec_env</span><span class="o">.</span><span class="n">env</span>
     <span class="k">else</span><span class="p">:</span>
@@ -329,11 +329,11 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">mo_parallel_to_aec</span><span class="p">(</span><span class="n">par_env</span><span class="p">:</span> <span class="n">ParallelEnv</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AECEnv</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a MO Parallel environment to an AEC environment.</span>
+<span class="w">    </span><span class="sd">"""Converts a MO Parallel environment to an AEC environment.</span>
 
 <span class="sd">    In the case of an existing aec environment wrapped using a `aec_to_prallel_wrapper`, this function will return the original AEC environment.</span>
 <span class="sd">    Otherwise, it will apply the `parallel_to_aec_wrapper` to convert the environment.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_env</span><span class="p">,</span> <span class="n">aec_to_parallel_wrapper</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">par_env</span><span class="o">.</span><span class="n">aec_env</span>
     <span class="k">else</span><span class="p">:</span>
@@ -344,18 +344,18 @@
 <div class="viewcode-block" id="mo_aec_to_parallel_wrapper">
 <a class="viewcode-back" href="../../../../api/wrappers/#momaland.utils.conversions.mo_aec_to_parallel_wrapper">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">mo_aec_to_parallel_wrapper</span><span class="p">(</span><span class="n">aec_to_parallel_wrapper</span><span class="p">,</span> <span class="n">MOParallelEnv</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts an AEC environment into a Parallel environment.</span>
+<span class="w">    </span><span class="sd">"""Converts an AEC environment into a Parallel environment.</span>
 
 <span class="sd">    Overrides PZ behavior to handle vectorial rewards. Keeping inheritance avoids code duplication and checks for instance type.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aec_env</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts an MO AEC environment into a MO Parallel environment.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Converts an MO AEC environment into a MO Parallel environment."""</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">aec_env</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">reward_spaces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the reward spaces of the environment.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Returns the reward spaces of the environment."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">reward_spaces</span>
 
     <span class="nd">@override</span>
@@ -363,12 +363,12 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">reward_spaces</span><span class="p">[</span><span class="n">agent</span><span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_central_observation_space</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delegate returning the central observation for the environment.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;central_observation&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Delegate returning the central observation for the environment."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"central_observation"</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">get_central_observation_space</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                <span class="s2">&quot;This environment does not support centralised observations. Please use the AEC environment directly.&quot;</span>
+                <span class="s2">"This environment does not support centralised observations. Please use the AEC environment directly."</span>
             <span class="p">)</span>
 
     <span class="nd">@override</span>
@@ -382,11 +382,11 @@
             <span class="k">if</span> <span class="n">agent</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">agent_selection</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">terminations</span><span class="p">[</span><span class="n">agent</span><span class="p">]</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">truncations</span><span class="p">[</span><span class="n">agent</span><span class="p">]:</span>
                     <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;expected agent </span><span class="si">{</span><span class="n">agent</span><span class="si">}</span><span class="s2"> got termination or truncation agent </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">agent_selection</span><span class="si">}</span><span class="s2">. Parallel environment wrapper expects all agent death (setting an agent&#39;s self.terminations or self.truncations entry to True) to happen only at the end of a cycle.&quot;</span>
+                        <span class="sa">f</span><span class="s2">"expected agent </span><span class="si">{</span><span class="n">agent</span><span class="si">}</span><span class="s2"> got termination or truncation agent </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">agent_selection</span><span class="si">}</span><span class="s2">. Parallel environment wrapper expects all agent death (setting an agent's self.terminations or self.truncations entry to True) to happen only at the end of a cycle."</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;expected agent </span><span class="si">{</span><span class="n">agent</span><span class="si">}</span><span class="s2"> got agent </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">agent_selection</span><span class="si">}</span><span class="s2">, Parallel environment wrapper expects agents to step in a cycle.&quot;</span>
+                        <span class="sa">f</span><span class="s2">"expected agent </span><span class="si">{</span><span class="n">agent</span><span class="si">}</span><span class="s2"> got agent </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">agent_selection</span><span class="si">}</span><span class="s2">, Parallel environment wrapper expects agents to step in a cycle."</span>
                     <span class="p">)</span>
             <span class="n">obs</span><span class="p">,</span> <span class="n">rew</span><span class="p">,</span> <span class="n">termination</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">last</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">aec_env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">actions</span><span class="p">[</span><span class="n">agent</span><span class="p">])</span>
@@ -410,18 +410,18 @@
 <div class="viewcode-block" id="mo_parallel_to_aec_wrapper">
 <a class="viewcode-back" href="../../../../api/wrappers/#momaland.utils.conversions.mo_parallel_to_aec_wrapper">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">mo_parallel_to_aec_wrapper</span><span class="p">(</span><span class="n">parallel_to_aec_wrapper</span><span class="p">,</span> <span class="n">MOAECEnv</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a parallel environment into an AEC environment.</span>
+<span class="w">    </span><span class="sd">"""Converts a parallel environment into an AEC environment.</span>
 
 <span class="sd">    Overrides PZ behavior to handle vectorial rewards. Keeping inheritance avoids code duplication and checks for instance type.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parallel_env</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a MO parallel environment into an MO AEC environment.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Converts a MO parallel environment into an MO AEC environment."""</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parallel_env</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">reward_spaces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the reward spaces of the environment.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Returns the reward spaces of the environment."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">reward_spaces</span>
 
     <span class="nd">@override</span>
