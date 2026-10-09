@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "momaland"
 description="A standard API for Multi-Objective Multi-Agent Decision making and a diverse set of reference environments."
 readme = "README.md"
-requires-python = ">= 3.10"
+requires-python = ">= 3.11"
 authors = [
     {name="Florian Felten", email="ffelten@mavt.ethz.ch"},
     {name="Roxana Radulescu", email="r.t.radulescu@uu.nl"},
@@ -17,7 +17,6 @@ classifiers = [
     "Development Status :: 4 - Beta",  # change to `5 - Production/Stable` when ready
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -81,7 +80,7 @@ momaland = [
 
 [tool.black]
 line-length = 127
-target-version = ['py310', 'py311', 'py312', 'py313']
+target-version = ['py311', 'py312', 'py313']
 include = '\.pyi?$'
 
 [tool.isort]
@@ -99,7 +98,7 @@ exclude = ["**/node_modules", "**/__pycache__"]
 strict = []
 
 typeCheckingMode = "basic"
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 pythonPlatform = "All"
 typeshedPath = "typeshed"
 enableTypeIgnoreComments = true
