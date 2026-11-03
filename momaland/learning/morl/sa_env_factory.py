@@ -1,11 +1,8 @@
 """Single agent environment factory."""
 
+from pettingzoo import make
+
 from momaland.envs.item_gathering.map_utils import DEFAULT_MAP, generate_map
-from momaland.utils.all_modules import (
-    mobeach_v0,
-    moitem_gathering_v0,
-    momultiwalker_stability_v0,
-)
 from momaland.utils.parallel_wrappers import CentraliseAgent
 
 
@@ -27,14 +24,18 @@ def make_single_agent_ig_env(objectives=3):
         env_map = get_map_4_O()
     else:
         env_map = DEFAULT_MAP
-    ig_env = moitem_gathering_v0.parallel_env(initial_map=env_map, num_timesteps=50, randomise=False, render_mode=None)
+    ig_env = make(
+        "parallel", "momaland/moitem_gathering-v0", initial_map=env_map, num_timesteps=50, randomise=False, render_mode=None
+    )
     return CentraliseAgent(ig_env, action_mapping=True)
 
 
 def make_single_agent_bpd_env(size="small"):
     """Create a centralised agent environment for the MO Beach Problem domain."""
     if size == "small":
-        bpd_env = mobeach_v0.parallel_env(
+        bpd_env = make(
+            "parallel",
+            "momaland/mobeach-v0",
             num_timesteps=5,
             num_agents=10,
             reward_mode="team",
@@ -44,7 +45,9 @@ def make_single_agent_bpd_env(size="small"):
             position_distribution=(0.5, 0.0, 0.5),
         )
     else:
-        bpd_env = moitem_gathering_v0.parallel_env(
+        bpd_env = make(
+            "parallel",
+            "momaland/moitem_gathering-v0",
             num_timesteps=1,
             num_agents=50,
             reward_mode="team",
@@ -58,5 +61,5 @@ def make_single_agent_bpd_env(size="small"):
 
 def make_single_agent_mw_env(reward_type="average", n_walkers=3):
     """Create a centralised agent environment for the Multiwalker domain."""
-    mw_env = momultiwalker_stability_v0.parallel_env(n_walkers=n_walkers, remove_on_fall=False)
+    mw_env = make("parallel", "momaland/momultiwalker_stability-v0", n_walkers=n_walkers, remove_on_fall=False)
     return CentraliseAgent(mw_env, action_mapping=False, reward_type=reward_type)

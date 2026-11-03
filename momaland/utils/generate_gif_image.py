@@ -5,14 +5,16 @@
 
 import sys
 
+from pettingzoo import aec_registry, make
 from PIL import Image
 
-from momaland.utils.all_modules import all_environments
+import momaland  # noqa: F401 - register environments
+from momaland.utils.registration import env_id_to_name, normalize_env_id
 
 
-def generate_gif(nameline, module):
+def generate_gif(nameline, env_id):
     """Generates a GIF of a full environment cycle."""
-    env = module.env(render_mode="rgb_array")
+    env = make("aec", normalize_env_id(env_id), render_mode="rgb_array")
     env.reset()
     imgs = []
     for _ in range(100):
@@ -38,10 +40,8 @@ def generate_gif(nameline, module):
 if __name__ == "__main__":
     name = sys.argv[1]
     if name == "all":
-        for name, module in all_environments.items():
-            nameline = name.replace("/", "_")
-            generate_gif(nameline, module)
+        for env_id in aec_registry:
+            if env_id.startswith("momaland/"):
+                generate_gif(env_id_to_name(env_id), env_id)
     else:
-        module = all_environments[name]
-        nameline = name.replace("/", "_")
-        generate_gif(nameline, module)
+        generate_gif(env_id_to_name(name), name)

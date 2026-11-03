@@ -6,9 +6,11 @@ import pickle
 
 import pytest
 from gymnasium.utils.env_checker import data_equivalence
+from pettingzoo import make
 from pettingzoo.test.seed_test import seed_action_spaces, seed_observation_spaces
 
 from momaland.utils.all_modules import all_environments
+from momaland.utils.registration import normalize_env_id
 
 
 ALL_ENVS = list(all_environments.items())
@@ -16,7 +18,7 @@ ALL_ENVS = list(all_environments.items())
 
 @pytest.mark.parametrize(("name", "env_module"), ALL_ENVS)
 def test_pickle_env(name, env_module):
-    env1 = env_module.env(render_mode="human")
+    env1 = make("aec", normalize_env_id(name), render_mode=None)
     env2 = pickle.loads(pickle.dumps(env1))
 
     env1.reset(seed=42)

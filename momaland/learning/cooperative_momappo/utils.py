@@ -14,6 +14,8 @@ from etils import epath
 from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 
+from momaland.utils.registration import env_id_to_name
+
 
 def strtobool(value: str) -> bool:
     """Converts a string to a boolean.
@@ -166,7 +168,7 @@ def save_results(returns, exp_name, seed):
 def save_actor(actor_state, weights, args):
     """Saves trained actor."""
     cur_dir_path = os.getcwd()
-    directory = epath.Path(f"{cur_dir_path}/trained_model_{args.env_id}_{args.exp_name}_{weights}_{args.seed}")
+    directory = epath.Path(f"{cur_dir_path}/trained_model_{env_id_to_name(args.env_id)}_{args.exp_name}_{weights}_{args.seed}")
     actor_dir = directory / "actor"
     print("Saving actor to ", actor_dir)
     ckptr = ocp.PyTreeCheckpointer()
