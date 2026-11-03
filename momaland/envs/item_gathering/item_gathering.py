@@ -97,7 +97,7 @@ class MOItemGathering(MOParallelEnv, EzPickle):
     The episode is terminated if all the items have been gathered.
 
     ## Episode Truncation
-    The episode termination occurs if the maximum number of timesteps is reached.
+    The episode is truncated if the maximum number of timesteps is reached.
 
     ## Arguments
     - 'num_timesteps': number of timesteps to run the environment for. Default: 10
@@ -451,7 +451,7 @@ class MOItemGathering(MOParallelEnv, EzPickle):
         if self.render_mode == "human":
             self.render()
 
-        return observations, rewards, self.truncations, self.terminations, infos
+        return observations, rewards, self.terminations, self.truncations, infos
 
     def state(self):
         """Returns the global observation of the map passed to each agent at the end of a timestep.

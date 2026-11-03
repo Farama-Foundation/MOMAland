@@ -343,7 +343,7 @@ class MOBeachDomain(MOParallelEnv, EzPickle):
         if self.render_mode == "human":
             self.render()
 
-        return observations, rewards, self.truncations, self.terminations, infos
+        return observations, rewards, self.terminations, self.truncations, infos
 
     @override
     def state(self) -> np.ndarray:
