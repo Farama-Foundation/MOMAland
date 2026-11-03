@@ -15,6 +15,6 @@ firstpage:
 | Action Space | Box(-1.0, 1.0, (1,), float32) |
 | Observation Space | Box(0, 255, (457, 120, 3), uint8) |
 | Reward Space | Box([-8.79e+04 -6.00e+01 -1.00e-01], [100.  60.   0.], (3,), float32) |
-| Import | `momaland.envs.mopistonball_v0` |
+| Create | `make("aec", "momaland/mopistonball-v0")` |
 
 A multi-objective version of the pistonball environment.

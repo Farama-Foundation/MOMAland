@@ -15,6 +15,6 @@ firstpage:
 | Action Space | Discrete(7) |
 | Observation Space | Dict('action_mask': Box(0, 1, (7,), int8), 'observation': Box(0, 1, (6, 7, 2), int8)) |
 | Reward Space | Box(-1.0, 1.0, (9,), float32) |
-| Import | `momaland.envs.moconnect4_v0` |
+| Create | `make("aec", "momaland/moconnect4-v0")` |
 
 Multi-objective Connect Four.
