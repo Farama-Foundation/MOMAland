@@ -303,7 +303,7 @@ class MOGemMining(MOParallelEnv, EzPickle):
         if self.render_mode == "human":
             self.render()
 
-        return observations, rewards, self.truncations, self.terminations, infos
+        return observations, rewards, self.terminations, self.truncations, infos
 
     # - Helper Methods (prefix by _) -#
     def _random_action(self):

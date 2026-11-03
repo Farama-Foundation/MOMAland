@@ -293,7 +293,7 @@ class MORouteChoice(MOParallelEnv, EzPickle):
         if self.render_mode == "human":
             self.render()
 
-        return observations, rewards, self.truncations, self.terminations, infos
+        return observations, rewards, self.terminations, self.truncations, infos
 
     # - Helper Methods -#
     def _read_problem(self, problem_name):
