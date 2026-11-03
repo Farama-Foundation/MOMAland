@@ -13,7 +13,10 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-      - run: pipx install pre-commit
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        id: setup-python
+        with:
+          python-version: "3.11"
+      - run: pipx install --python '${{ steps.setup-python.outputs.python-path }}' pre-commit
       - run: pre-commit run --all-files

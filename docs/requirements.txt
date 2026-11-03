@@ -1,9 +1,9 @@
 cython
 gymnasium
-git+https://github.com/Farama-Foundation/MOMAland
+momaland @ git+https://github.com/Farama-Foundation/MOMAland
 tqdm
 sphinx
 sphinx-autobuild
 myst-parser
 sphinx_github_changelog
-git+https://github.com/Farama-Foundation/Celshast#egg=furo
+celshast
