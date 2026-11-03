@@ -30,4 +30,4 @@ jobs:
         uv pip install --system -e .[all]
     - name: Full Python tests
       run: |
-        pytest tests/test_envs.py
+        pytest tests
