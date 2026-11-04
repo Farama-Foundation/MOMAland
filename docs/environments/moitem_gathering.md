@@ -15,7 +15,7 @@ firstpage:
 | Action Space | Discrete(5) |
 | Observation Space | Tuple(Discrete(2, start=-2), Box(-2, 3, (8, 8), int64)) |
 | Reward Space | Box(0.0, 3.0, (3,), float32) |
-| Import | `momaland.envs.moitem_gathering_v0` |
+| Create | `make("aec", "momaland/moitem_gathering-v0")` |
 
 Environment for the MO-ItemGathering problem.
 

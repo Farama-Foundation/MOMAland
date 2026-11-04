@@ -4,12 +4,11 @@ This script reads documentation from /momaland and puts it into md files inside 
 
 import os
 import re
-from dataclasses import dataclass
-from functools import reduce
 
+from pettingzoo import aec_registry, make
 from tqdm import tqdm
 
-from momaland.utils.all_modules import all_environments
+import momaland  # noqa: F401 - register environments
 
 
 def trim(docstring):
@@ -61,42 +60,9 @@ def check_homogeneous_spaces(spaces):
 pattern = re.compile(r"(?<!^)(?=[A-Z])")
 
 
-@dataclass
-class EnvSpec:
-    id: str
-    module: object
-    version: int
-
-
-filtered_envs_by_type = {}
-
-# Obtain filtered list
-for env_id, env_module in tqdm(all_environments.items()):
-    env_version = int(env_id.split("_v")[-1])
-    env_type = "environments"
-
-    try:
-        if env_type not in filtered_envs_by_type.keys():
-            filtered_envs_by_type[env_type] = {}
-        # only store new entries and higher versions
-        if env_id not in filtered_envs_by_type[env_type] or (
-            env_id in filtered_envs_by_type[env_type] and env_version > filtered_envs_by_type[env_type][env_id].version
-        ):
-            filtered_envs_by_type[env_type][env_id] = EnvSpec(env_id, env_module, env_version)
-
-    except Exception as e:
-        print(e)
-
-# Sort
-filtered_envs = list(
-    reduce(
-        lambda s, x: s + x,
-        map(
-            lambda arr: sorted(arr, key=lambda x: x.id),
-            map(lambda dic: list(dic.values()), list(filtered_envs_by_type.values())),
-        ),
-        [],
-    )
+filtered_envs = sorted(
+    (spec for env_id, spec in aec_registry.items() if env_id.startswith("momaland/")),
+    key=lambda spec: spec.id,
 )
 
 env_dir = os.path.join(os.path.dirname(__file__), "..", "environments")
@@ -110,9 +76,9 @@ if not dir_exists:
 # Update Docs
 for i, env_spec in tqdm(enumerate(filtered_envs)):
     print("ID:", env_spec.id)
-    env_type = str(env_spec.module).split(".")[2]
+    env_type = "environments"
     try:
-        env = env_spec.module.env()
+        env = make("aec", env_spec.id)
         env.reset()
 
         docstring = env.unwrapped.__doc__
@@ -121,17 +87,15 @@ for i, env_spec in tqdm(enumerate(filtered_envs)):
         docstring = trim(docstring)
 
         # pascal case
-        pascal_env_name = env_spec.id
+        pascal_env_name = env_spec.name
         print(pascal_env_name)
         snake_env_name = pattern.sub("_", pascal_env_name).lower()
-        # remove what is after the last "-" in snake_env_name e.g. "_v0"
-        snake_env_name = snake_env_name[: snake_env_name.rfind("_")]
         title_env_name = snake_env_name.replace("mo", "mo ").title().replace("Mo ", "MO-").replace("_", "")
         env_type_title = env_type.replace("_", " ").title()
         related_pages_meta = ""
-        if i == 0 or not env_type == str(filtered_envs[i - 1].module).split(".")[2]:
+        if i == 0:
             related_pages_meta = "firstpage:\n"
-        elif i == len(filtered_envs) - 1 or not env_type == str(filtered_envs[i + 1].module).split(".")[2]:
+        elif i == len(filtered_envs) - 1:
             related_pages_meta = "lastpage:\n"
 
         front_matter = f"""---
@@ -174,7 +138,7 @@ title: {title_env_name}
             rew_space_str = [f"{agent}: {space}" for agent, space in enumerate(rew_spaces)]
         env_table += f"| Reward Space | {rew_space_str} |\n"
 
-        env_table += f"| Import | `momaland.envs.{env_spec.id}` | \n"
+        env_table += f'| Create | `make("aec", "{env_spec.id}")` | \n'
 
         if docstring is None:
             docstring = "No information provided"
@@ -194,5 +158,6 @@ title: {title_env_name}
         file = open(v_path, "w+", encoding="utf-8")
         file.write(all_text)
         file.close()
+        env.close()
     except Exception as e:
         print(e)

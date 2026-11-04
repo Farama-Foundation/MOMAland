@@ -15,7 +15,7 @@ firstpage:
 | Action Space | Box(-1.0, 1.0, (4,), float32) |
 | Observation Space | Box(-inf, inf, (31,), float32) |
 | Reward Space | Box([-2.100e+02 -1.567e-02], [0.46 0.  ], (2,), float32) |
-| Import | `momaland.envs.momultiwalker_stability_v0` |
+| Create | `make("aec", "momaland/momultiwalker_stability-v0")` |
 
 A sister environment to [MO-Multiwalker](https://momaland.farama.org/environments/momultiwalker), which is the MO adaptation of the [Multiwalker](https://pettingzoo.farama.org/environments/sisl/multiwalker/) environment from PettingZoo.
 

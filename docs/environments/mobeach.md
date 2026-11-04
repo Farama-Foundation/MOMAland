@@ -12,7 +12,7 @@ firstpage:
 | Action Space | Discrete(3) |
 | Observation Space | Box(0.0, 100.0, (5,), float32) |
 | Reward Space | Box(0.0, 18.73087, (2,), float32) |
-| Import | `momaland.envs.mobeach_v0` |
+| Create | `make("aec", "momaland/mobeach-v0")` |
 
 Environment for MO-BeachDomain problem.
 

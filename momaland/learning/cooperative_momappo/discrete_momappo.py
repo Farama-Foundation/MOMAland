@@ -6,6 +6,7 @@ Utilizes OLS to generate weight vectors and learn a Pareto set of policies. Work
 import argparse
 import os
 import time
+from functools import partial
 from typing import List, NamedTuple, Sequence, Tuple
 
 import chex
@@ -23,6 +24,7 @@ from flax.training.train_state import TrainState
 from jax import vmap
 from morl_baselines.common.evaluation import log_all_multi_policy_metrics
 from morl_baselines.multi_policy.linear_support.linear_support import LinearSupport
+from pettingzoo import make
 from supersuit import agent_indicator_v0
 from tqdm import tqdm
 
@@ -32,13 +34,13 @@ from momaland.learning.cooperative_momappo.utils import (
     strtobool,
 )
 from momaland.learning.utils import autotag
-from momaland.utils.all_modules import all_environments
 from momaland.utils.env import ParallelEnv
 from momaland.utils.parallel_wrappers import (
     LinearizeReward,
     NormalizeReward,
     RecordEpisodeStatistics,
 )
+from momaland.utils.registration import env_id_to_name, normalize_env_id
 
 
 def parse_args():
@@ -47,7 +49,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     # Env and experiment arguments
-    parser.add_argument("--env-id", type=str, help="MOMAland id of the environment to run (check all_modules.py)", required=True)
+    parser.add_argument("--env-id", type=str, help="Environment ID, e.g. momaland/moitem_gathering-v0 (legacy IDs also accepted)", required=True)
     parser.add_argument("--exp-name", type=str, default=os.path.basename(__file__).rstrip(".py"),
                         help="the name of this experiment")
     parser.add_argument("--seed", type=int, default=1,
@@ -580,7 +582,7 @@ if __name__ == "__main__":
 
     print("Let's go, running on", jax.devices())
 
-    env_constructor = all_environments[args.env_id].parallel_env
+    env_constructor = partial(make, "parallel", normalize_env_id(args.env_id))
     start_time = time.time()
 
     # Env init
@@ -604,7 +606,7 @@ if __name__ == "__main__":
         exp_name = args.exp_name
         args_dict = vars(args)
         args_dict["algo"] = exp_name
-        run_name = f"{args.env_id}__{exp_name}({args.weights_generation})__{args.seed}__{int(time.time())}"
+        run_name = f"{env_id_to_name(args.env_id)}__{exp_name}({args.weights_generation})__{args.seed}__{int(time.time())}"
         wandb.init(
             project=args.wandb_project,
             entity=args.wandb_entity,

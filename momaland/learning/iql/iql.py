@@ -3,9 +3,10 @@
 import random
 
 import numpy as np
+from pettingzoo import make
 
 from momaland.learning.iql.tabular_bpd import TabularMOBeachDomainWrapper
-from momaland.utils.all_modules import all_environments
+from momaland.utils.registration import normalize_env_id
 
 
 def compute_utility(weights, rewards):
@@ -53,11 +54,11 @@ class QAgent:
 def train(args, weights, env_args):
     """IQL scalarizing the vector reward using weights and weighted sum."""
     # Environment Initialization
-    if args.env_id == "mobeach_v0":
+    if normalize_env_id(args.env_id) == "momaland/mobeach-v0":
         # Use the tabular version of the MO-Beach domain with IQL
         env = TabularMOBeachDomainWrapper(**env_args)
     else:
-        env = all_environments[args.env_id].parallel_env(**env_args)
+        env = make("parallel", normalize_env_id(args.env_id), **env_args)
     obs, infos = env.reset()
 
     agents = {

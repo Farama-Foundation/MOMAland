@@ -21,8 +21,8 @@ def parse_args():
     """Argument parsing for hyperparameter optimization."""
     # fmt: off
     parser = argparse.ArgumentParser()
-    parser.add_argument("--env-id", type=str, help="MOMAland id of the environment to run (check all_modules.py)",
-                        required=True, default="moroute_choice_v0")
+    parser.add_argument("--env-id", type=str, default="moroute_choice_v0",
+                        help="Environment ID, e.g. momaland/moroute_choice-v0 (legacy IDs also accepted)")
     parser.add_argument('--exp-name', type=str, default=os.path.basename(__file__).rstrip(".py"),
                         help="the name of this experiment")
     parser.add_argument('--seed', type=int, default=1,
