@@ -3,7 +3,7 @@
 from typing import Optional
 
 import numpy as np
-from gymnasium.wrappers.normalize import RunningMeanStd
+from gymnasium.wrappers.utils import RunningMeanStd
 from pettingzoo.utils.wrappers.base import BaseWrapper
 
 
