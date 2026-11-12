@@ -28,10 +28,12 @@ class RecordEpisodeStatistics(BaseParallelWrapper):
     def step(self, actions):
         """Steps through the environment, recording episode statistics."""
         obs, rews, terminateds, truncateds, infos = super().step(actions)
-        for agent in self.env.possible_agents:
+        # A parallel env drops an agent once it is done, so only the agents it still reports have a reward.
+        for agent in rews:
             self.episode_rewards[agent] += rews[agent]
             self.episode_lengths[agent] += 1
-        if all(terminateds.values()) or all(truncateds.values()):
+        # An agent is done when it terminates or truncates, and the two can differ between agents.
+        if terminateds and all(terminateds[agent] or truncateds[agent] for agent in terminateds):
             infos["episode"] = {
                 "r": self.episode_rewards,
                 "l": self.episode_lengths,
