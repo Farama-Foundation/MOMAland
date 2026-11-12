@@ -115,7 +115,3 @@ If you use this repository in your research, please cite:
 }
 ```
 <!-- end citation -->
-
-## Development
-### Setup pre-commit
-Clone the repo and run `pre-commit install` to setup the pre-commit hooks.
