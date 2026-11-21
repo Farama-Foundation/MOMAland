@@ -71,7 +71,7 @@ html_theme = "celshast"
 html_title = "MOMAland Documentation"
 html_baseurl = "https://momaland.farama.org"
 html_copy_source = False
-html_favicon = "_static/img/favicon.png"
+html_favicon = "_static/img/favicon.svg"
 html_theme_options = {
     "light_logo": "img/momaland.svg",
     "dark_logo": "img/momaland-white.svg",
