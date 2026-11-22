@@ -5,7 +5,10 @@ firstpage:
 ---
 
 # MO-Breakthrough
-
+```{figure} ../_static/gifs/mobreakthrough.gif
+:width: 200px
+:name: mobreakthrough
+```
 |   |   |
 |---|---|
 | Agents names | `player_i for i in [0, 1]` |
