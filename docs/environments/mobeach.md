@@ -5,7 +5,10 @@ firstpage:
 ---
 
 # MO-Beach
-
+```{figure} ../_static/gifs/mobeach.gif
+:width: 200px
+:name: mobeach
+```
 |   |   |
 |---|---|
 | Agents names | `agent_i for i in [0, 99]` |
