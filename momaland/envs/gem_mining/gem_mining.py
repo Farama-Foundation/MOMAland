@@ -10,11 +10,13 @@ Created on Tue Oct 24 16:31:14 2023
 @author: dmroijers
 """
 
+import colorsys
 import functools
 import random
 from typing_extensions import override
 
 import numpy as np
+import pygame
 from gymnasium.logger import warn
 from gymnasium.spaces import Box, Discrete
 from gymnasium.utils import EzPickle
@@ -22,6 +24,12 @@ from pettingzoo.utils import wrappers
 
 from momaland.utils.conversions import mo_parallel_to_aec
 from momaland.utils.env import MOParallelEnv
+
+
+def _hue_color(i, n, sat=0.55, val=0.9):
+    """Returns an RGB color for index `i` of `n`, evenly spaced around the hue wheel."""
+    r, g, b = colorsys.hsv_to_rgb((i / max(n, 1)) % 1.0, sat, val)
+    return (int(r * 255), int(g * 255), int(b * 255))
 
 
 def parallel_env(**kwargs):
@@ -98,7 +106,7 @@ class MOGemMining(MOParallelEnv, EzPickle):
     The code was based on previous code by Diederik Roijers and Eugenio Bargiacchi (in different programming languages), and reimplemented.
     """
 
-    metadata = {"render_modes": ["human"], "name": "mogem_mining_v0"}
+    metadata = {"render_modes": ["human", "rgb_array"], "name": "mogem_mining_v0", "render_fps": 2}
 
     def __init__(
         self,
@@ -210,6 +218,21 @@ class MOGemMining(MOParallelEnv, EzPickle):
         # set truncations to false (no agents are ever lost)
         self.truncations = {agent: False for agent in self.agents}
 
+        # the mines reachable from each village, derived from its (agent-specific) action space
+        self.reachable_mines = {
+            agent: list(range(self.action_spaces[agent].start, self.action_spaces[agent].start + self.action_spaces[agent].n))
+            for agent in self.possible_agents
+        }
+
+        # pygame rendering (state of the last step, filled in by step(), used by render())
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self._last_actions = None
+        self._last_workers_at_mine = None
+        self._last_reward = None
+        self.window_size = (60 + max(num_agents, self.num_mines) * 46, 520)
+        self.window = None
+        self.clock = None
+
     # this cache ensures that same space object is returned for the same agent
     # allows action space seeding to work as expected
     @functools.lru_cache(maxsize=None)
@@ -228,9 +251,111 @@ class MOGemMining(MOParallelEnv, EzPickle):
 
     @override
     def render(self):
+        """Renders the coordination graph of the Gem Mining problem.
+
+        Villages (agents) are drawn on the top row and mines on the bottom row. Thin grey lines show
+        the coordination graph - which mines each village can send its workers to. After a step, the
+        chosen assignment of each village is highlighted in the village's color, mines are shaded by
+        how many workers they received, and the gems found per objective this step are shown as a bar
+        readout (one bar per gem type / objective).
+
+        In "human" mode a window is opened and updated in place. In "rgb_array" mode the frame is
+        returned as a `(height, width, 3)` uint8 numpy array for GIF generation.
+        """
         if self.render_mode is None:
             warn("You are calling render method without specifying any render mode.")
             return
+
+        if self.window is None:
+            # Only initialize the subsystems actually used (display + font). pygame.init() also starts
+            # the audio mixer and joystick subsystems, whose device enumeration adds ~0.4s of startup
+            # (see Farama-Foundation/MOMAland#71). The display is initialized in the human branch only.
+            pygame.font.init()
+            if self.render_mode == "human":
+                pygame.display.init()
+                pygame.display.set_caption("MO-GemMining")
+                self.window = pygame.display.set_mode(self.window_size)
+            else:  # rgb_array
+                self.window = pygame.Surface(self.window_size)
+            if self.clock is None:
+                self.clock = pygame.time.Clock()
+
+        title_font = pygame.font.SysFont("Arial", 18, bold=True)
+        font = pygame.font.SysFont("Arial", 11)
+        num_villages = len(self.possible_agents)
+
+        def _row_x(index, count):
+            margin = 40
+            span = self.window_size[0] - 2 * margin
+            return margin + (span * (index + 0.5) / count)
+
+        village_y = 110
+        mine_y = self.window_size[1] - 150
+        village_color = {agent: _hue_color(i, num_villages) for i, agent in enumerate(self.possible_agents)}
+        workers_at_mine = self._last_workers_at_mine if self._last_workers_at_mine is not None else np.zeros(self.num_mines)
+        max_workers = max(int(workers_at_mine.max()) if workers_at_mine.size else 0, 1)
+
+        self.window.fill((247, 244, 235))
+        self.window.blit(title_font.render("MO-GemMining  -  villages assign workers to mines", True, (20, 20, 20)), (16, 12))
+        self.window.blit(font.render("villages", True, (90, 90, 90)), (16, village_y - 8))
+        self.window.blit(font.render("mines", True, (90, 90, 90)), (16, mine_y - 8))
+
+        # Coordination edges (faint) and, after a step, the chosen assignment (colored).
+        for i, agent in enumerate(self.possible_agents):
+            vx = _row_x(i, num_villages)
+            for mine in self.reachable_mines[agent]:
+                mx = _row_x(mine, self.num_mines)
+                pygame.draw.line(self.window, (218, 214, 205), (vx, village_y + 14), (mx, mine_y - 12), 1)
+        if self._last_actions is not None:
+            for i, agent in enumerate(self.possible_agents):
+                if agent not in self._last_actions:
+                    continue
+                vx = _row_x(i, num_villages)
+                mx = _row_x(int(self._last_actions[agent]), self.num_mines)
+                pygame.draw.line(self.window, village_color[agent], (vx, village_y + 14), (mx, mine_y - 12), 2)
+
+        # Mines: shaded by worker load, radius scaled by workers received.
+        for j in range(self.num_mines):
+            mx = _row_x(j, self.num_mines)
+            load = workers_at_mine[j] / max_workers
+            radius = 8 + int(load * 12)
+            shade = int(230 - load * 150)
+            pygame.draw.circle(self.window, (shade, shade - 20 if shade > 20 else 0, 60), (int(mx), mine_y), radius)
+            pygame.draw.circle(self.window, (60, 60, 60), (int(mx), mine_y), radius, 1)
+            self.window.blit(font.render(str(int(workers_at_mine[j])), True, (20, 20, 20)), (int(mx) - 5, mine_y + radius + 2))
+
+        # Villages: colored squares labeled with their worker count.
+        for i, agent in enumerate(self.possible_agents):
+            vx = _row_x(i, num_villages)
+            rect = pygame.Rect(int(vx) - 9, village_y - 9, 18, 18)
+            pygame.draw.rect(self.window, village_color[agent], rect)
+            pygame.draw.rect(self.window, (40, 40, 40), rect, 1)
+            self.window.blit(font.render(str(self.workers[agent][0]), True, (20, 20, 20)), (int(vx) - 4, village_y - 26))
+
+        # Multi-objective readout: gems found per objective (gem type) this step.
+        if self._last_reward is not None:
+            base_x, base_y = 16, self.window_size[1] - 60
+            self.window.blit(font.render("gems found this step:", True, (60, 60, 60)), (base_x, base_y - 16))
+            for o in range(self.num_objectives):
+                color = _hue_color(o, self.num_objectives, sat=0.8, val=0.85)
+                gems = int(self._last_reward[o])
+                pygame.draw.rect(self.window, color, pygame.Rect(base_x + o * 120, base_y, 18, 18))
+                self.window.blit(font.render(f"obj {o}: {gems}", True, (20, 20, 20)), (base_x + o * 120 + 24, base_y + 3))
+
+        if self.render_mode == "human":
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+        elif self.render_mode == "rgb_array":
+            return np.transpose(np.array(pygame.surfarray.pixels3d(self.window)), axes=(1, 0, 2))
+
+    @override
+    def close(self):
+        """Closes the rendering window."""
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
+            self.window = None
 
     @override
     def reset(self, seed=None, options=None):
@@ -246,6 +371,10 @@ class MOGemMining(MOParallelEnv, EzPickle):
         self.truncations = {agent: False for agent in self.agents}
         observations = {agent: np.array([0], dtype=np.float32) for i, agent in enumerate(self.agents)}
         self.episode_num = 0
+        # no action has been taken yet this episode
+        self._last_actions = None
+        self._last_workers_at_mine = None
+        self._last_reward = None
 
         infos = {agent: {} for agent in self.agents}
         return observations, infos
@@ -291,6 +420,11 @@ class MOGemMining(MOParallelEnv, EzPickle):
                     reward_vec[j] = reward_vec[j] + outcome[0]
         # every agent gets the same reward vector (fully cooperative)
         rewards = {agent: reward_vec for agent in self.agents}
+
+        # remember this step's joint action / outcome for rendering (before self.agents is cleared)
+        self._last_actions = dict(actions)
+        self._last_workers_at_mine = workers_at_mine
+        self._last_reward = reward_vec
 
         # - Infos -#
         # typically there won't be any information in the infos, but there must still be an entry for each agent
