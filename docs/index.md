@@ -47,6 +47,7 @@ Contribute to the Docs <https://github.com/Farama-Foundation/momaland/tree/maste
 
 ```{project-logo} _static/img/momaland-text.png
 :alt: MOMAland Logo
+:class: farama-black-logo-invert
 ```
 
 ```{project-heading}
