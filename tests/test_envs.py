@@ -3,6 +3,7 @@ import pickle
 
 import numpy as np
 import pytest
+from pettingzoo import make, parallel_registry
 from pettingzoo.test import parallel_api_test, seed_test
 
 from momaland.envs.samegame import mosame_game_v0
@@ -10,15 +11,21 @@ from momaland.test.api_test import api_test
 
 # from momaland.test.wrapper_test import wrapper_test
 from momaland.utils.all_modules import all_environments
+from momaland.utils.registration import normalize_env_id
 
 
 @pytest.mark.parametrize(("name", "env_module"), list(all_environments.items()))
 def test_module(name, env_module):
-    _env = env_module.env(render_mode=None)
+    env_id = normalize_env_id(name)
+    _env = make("aec", env_id, render_mode=None)
     assert str(_env) == os.path.basename(name)
     api_test(_env)
-    if _env.metadata["is_parallelizable"]:
-        parallel_api_test(env_module.parallel_env())
+    if env_id in parallel_registry:
+        parallel = make("parallel", env_id)
+        try:
+            parallel_api_test(parallel)
+        finally:
+            parallel.close()
     # wrapper_test(env_module): TODO: There are some problems with the NormalizeReward wrapper.
     seed_test(env_module.env, 50)
 
@@ -28,6 +35,8 @@ def test_module(name, env_module):
     recreated_env = pickle.loads(pickle.dumps(_env))
     # TODO recreated_env.seed(42)
     api_test(recreated_env)
+    recreated_env.close()
+    _env.close()
 
 
 def test_samegame_reset_reproducible():

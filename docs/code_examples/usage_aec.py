@@ -1,7 +1,9 @@
-from pettingzoo.atari import space_invaders_v2
+from pettingzoo import make
+
+import momaland  # noqa: F401 - register environments
 
 
-env = space_invaders_v2.env(render_mode="human")
+env = make("aec", "momaland/mopistonball-v0", render_mode="human")
 env.reset(seed=42)
 
 for agent in env.agent_iter():

@@ -12,6 +12,6 @@ firstpage:
 | Action Space | Discrete(5544) |
 | Observation Space | Dict('action_mask': Box(0, 1, (5544,), int8), 'observation': Dict('board': Box(0.0, 6.0, (15, 15), float32), 'scores': Box(0, 18, (6,), int32), 'tiles': Box(0, 6, (6, 2), int32))) |
 | Reward Space | Box(0.0, 18.0, (6,), float32) |
-| Import | `momaland.envs.moingenious_v0` |
+| Create | `make("aec", "momaland/moingenious-v0")` |
 
 Environment for the multi-objective Ingenious game.

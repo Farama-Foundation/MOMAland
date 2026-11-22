@@ -6,10 +6,11 @@ import jax
 import jax.numpy as jnp
 import optax
 from flax.training.train_state import TrainState
+from pettingzoo import make
 from supersuit import agent_indicator_v0, clip_actions_v0, normalize_obs_v0
 
 from momaland.learning.cooperative_momappo.utils import eval_mo, load_actor_state
-from momaland.utils.all_modules import all_environments
+from momaland.utils.registration import normalize_env_id
 
 
 def parse_args():
@@ -35,7 +36,7 @@ def main():
     """Main function to execute the policy of a trained MOMAPPO agent."""
     args = parse_args()
     key = jax.random.PRNGKey(args.seed)
-    env = all_environments[args.env_id].parallel_env(render_mode="human")
+    env = make("parallel", normalize_env_id(args.env_id), render_mode="human")
 
     # Env init
     if args.continuous:

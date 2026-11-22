@@ -12,6 +12,6 @@ firstpage:
 | Action Space | Discrete(225) |
 | Observation Space | Dict('action_mask': Box(0, 1, (225,), int8), 'observation': Box(0, 1, (15, 15, 5), int8)) |
 | Reward Space | Box(0.0, 50625.0, (5,), float32) |
-| Import | `momaland.envs.mosame_game_v0` |
+| Create | `make("aec", "momaland/mosame_game-v0")` |
 
 SameGame environment for multiple agents with multiple objectives.

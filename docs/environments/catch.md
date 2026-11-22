@@ -15,7 +15,7 @@ firstpage:
 | Action Space | Box(-1.0, 1.0, (3,), float32) |
 | Observation Space | Box([-3. -3.  0. -3. -3.  0. -3. -3.  0. -3. -3.  0. -3. -3.  0.], 3.0, (15,), float32) |
 | Reward Space | Box(-10.0, [ 1. inf], (2,), float32) |
-| Import | `momaland.envs.catch_v0` |
+| Create | `make("aec", "momaland/catch-v0")` |
 
 A `Parallel` environment where drones learn how to surround a moving target trying to escape.
 

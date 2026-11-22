@@ -1,7 +1,9 @@
-from pettingzoo.butterfly import pistonball_v6
+from pettingzoo import make
+
+import momaland  # noqa: F401 - register environments
 
 
-env = pistonball_v6.parallel_env(render_mode="human")
+env = make("parallel", "momaland/mopistonball-v0", render_mode="human")
 observations, infos = env.reset()
 
 while env.agents:

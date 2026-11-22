@@ -12,7 +12,7 @@ firstpage:
 | Action Space | Discrete(3)                       |
 | Observation Space | Box(0.0, 4200.0, (1,), float32)   |
 | Reward Space | Box(-3.0, 0.0, (2,), float32)     |
-| Import | `momaland.envs.mo_routechoice_v0` |
+| Create | `make("aec", "momaland/moroute_choice-v0")` |
 
 Environment for MO-RouteChoice problem.
 

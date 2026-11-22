@@ -32,14 +32,17 @@ This does not include dependencies for all components of MOMAland (not everythin
 
 ## API
 <!-- start snippet-usage -->
-Similar to [PettingZoo](https://pettingzoo.farama.org), the MOMAland API models environments as simple Python `env` classes. Creating environment instances and interacting with them is very simple - here's an example using the "momultiwalker_stability_v0" environment:
+Import `momaland` to register its environments, then use PettingZoo's `make` function. The first argument selects `"aec"` or `"parallel"`; the second is a namespaced environment ID. Here is an AEC example:
 
 ```python
-from momaland.envs.momultiwalker_stability import momultiwalker_stability_v0 as _env
 import numpy as np
+from pettingzoo import make
 
-# .env() function will return an AEC environment, as per PZ standard
-env = _env.env(render_mode="human")
+import momaland
+from momaland.utils.aec_wrappers import LinearizeReward
+
+# Select the AEC API explicitly.
+env = make("aec", "momaland/momultiwalker_stability-v0", render_mode="human")
 
 env.reset(seed=42)
 for agent in env.agent_iter():
@@ -62,13 +65,25 @@ weights = {
     "walker_1": np.array([0.5, 0.5]),
     "walker_2": np.array([0.2, 0.8]),
 }
+env = make("aec", "momaland/momultiwalker_stability-v0")
 env = LinearizeReward(env, weights)
+env.close()
 ```
 
 For details on multi-objective multi-agent RL definitions, see [Multi-Objective Multi-Agent Decision Making: A Utility-based Analysis and Survey](https://arxiv.org/abs/1909.02964).
 
 You can also check more examples in this colab notebook! [![MOMAland Demo in Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Farama-Foundation/momaland/blob/main/momaland_demo.ipynb)
 <!-- end snippet-usage -->
+
+MOMAland requires PettingZoo 1.27.0 or newer. Existing versioned modules and their
+`.env()`, `.parallel_env()`, and `.raw_env()` constructors remain supported.
+Training scripts also accept legacy IDs such as `moitem_gathering_v0`.
+
+All 13 environments support AEC. The parallel API supports `mobeach`,
+`momultiwalker_stability`, `catch`, `surround`, `escort`, `moitem_gathering`,
+`mopistonball`, `moroute_choice`, and `mogem_mining`. Use the `momaland/` prefix
+and `-v0` suffix, for example `momaland/mobeach-v0`. `moingenious`, `moconnect4`,
+`mobreakthrough`, and `mosame_game` support AEC only.
 
 ## Learning Algorithms
 <!-- start learning-algorithms -->
@@ -89,7 +104,7 @@ Here is a list of algorithms that are currently implemented:
 <!-- end learning-algorithms -->
 
 ## Environment Versioning
-MOMAland keeps strict versioning for reproducibility reasons. All environments end in a suffix like "_v0".  When changes are made to environments that might impact learning results, the number is increased by one to prevent potential confusion.
+MOMAland keeps strict versioning for reproducibility reasons. Registry IDs end in a version suffix such as `-v0`; legacy module names use `_v0`.  When changes are made to environments that might impact learning results, the number is increased by one to prevent potential confusion.
 
 ## Development Roadmap
 We have a roadmap for future development available [here](https://github.com/Farama-Foundation/momaland/issues/56).
