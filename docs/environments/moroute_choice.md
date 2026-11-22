@@ -5,7 +5,10 @@ firstpage:
 ---
 
 # MO-RouteChoice
-
+```{figure} ../_static/gifs/moroute_choice.gif
+:width: 200px
+:name: moroute_choice
+```
 |   |                                   |
 |---|-----------------------------------|
 | Agents names | `agent_i for i in [0, 4199]`      |

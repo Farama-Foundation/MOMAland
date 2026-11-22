@@ -12,6 +12,7 @@ from typing_extensions import override
 
 import networkx as nx
 import numpy as np
+import pygame
 from gymnasium.logger import warn
 from gymnasium.spaces import Box, Discrete
 from gymnasium.utils import EzPickle
@@ -20,6 +21,16 @@ from sympy import diff, lambdify, sympify
 
 from momaland.utils.conversions import mo_parallel_to_aec
 from momaland.utils.env import MOParallelEnv
+
+
+def _flow_color(ratio):
+    """Maps a congestion ratio in [0, 1] to an RGB color, green (free) -> yellow -> red (congested)."""
+    ratio = min(max(ratio, 0.0), 1.0)
+    if ratio < 0.5:
+        t = ratio / 0.5
+        return (int(60 + t * 180), int(180 + t * 30), int(75 - t * 25))
+    t = (ratio - 0.5) / 0.5
+    return (int(240 - t * 30), int(210 - t * 160), int(50))
 
 
 def parallel_env(**kwargs):
@@ -170,7 +181,24 @@ class MORouteChoice(MOParallelEnv, EzPickle):
         self.cost_function = dict()
         self._create_latency_and_cost_function(nx.get_edge_attributes(self.graph, "latency_function"), num_agents)
 
-    metadata = {"render_modes": ["human"], "name": "moroute_choice_v0"}
+        # pygame rendering
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        # The bundled networks range from 4-node Braess graphs to Anaheim's 416 nodes, so the
+        # canvas grows with the node count instead of squeezing every network into one size.
+        num_nodes = self.graph.number_of_nodes()
+        if num_nodes <= 30:
+            self.window_size = (760, 560)
+        elif num_nodes <= 120:
+            self.window_size = (1100, 800)
+        else:
+            self.window_size = (1500, 1100)
+        self.window = None
+        self.clock = None
+        self._node_pos = None  # pixel positions of the network nodes, computed lazily on first render
+        self._node_radius = 20  # adapted to the layout density alongside _node_pos
+        self._draw_labels = True  # labels are dropped when nodes get too small to hold them
+
+    metadata = {"render_modes": ["human", "rgb_array"], "name": "moroute_choice_v0", "render_fps": 2}
 
     # this cache ensures that same space object is returned for the same agent
     # allows action space seeding to work as expected
@@ -190,9 +218,183 @@ class MORouteChoice(MOParallelEnv, EzPickle):
 
     @override
     def render(self):
+        """Renders the road network and the current congestion on each link.
+
+        Nodes are the junctions of the network; origin nodes are outlined in green and destination
+        nodes in red (from the OD pairs). Each directed link is drawn as an arrow whose width and
+        color encode its current flow (the number of drivers on it), from green (free flowing) to
+        red (congested), making the cost of congestion - the core of Braess' paradox - visible. The
+        link flow and the average travel time are printed on the frame.
+
+        In "human" mode a window is opened and updated in place. In "rgb_array" mode the frame is
+        returned as a `(height, width, 3)` uint8 numpy array for GIF generation.
+        """
         if self.render_mode is None:
             warn("You are calling render method without specifying any render mode.")
             return
+
+        if self.window is None:
+            # Only initialize the subsystems actually used (display + font). pygame.init() also starts
+            # the audio mixer and joystick subsystems, whose device enumeration adds ~0.4s of startup
+            # (see Farama-Foundation/MOMAland#71). The display is initialized in the human branch only.
+            pygame.font.init()
+            if self.render_mode == "human":
+                pygame.display.init()
+                pygame.display.set_caption("MO-RouteChoice")
+                self.window = pygame.display.set_mode(self.window_size)
+            else:  # rgb_array
+                self.window = pygame.Surface(self.window_size)
+            if self.clock is None:
+                self.clock = pygame.time.Clock()
+        if self._node_pos is None:
+            self._node_pos = self._compute_node_positions()
+            self._adapt_scale_to_density()
+
+        title_font = pygame.font.SysFont("Arial", 18, bold=True)
+        font = pygame.font.SysFont("Arial", 13)
+
+        # Origin and destination nodes, parsed from the "origin|destination" OD pairs.
+        origins = {pair.split("|")[0] for pair in self.od}
+        destinations = {pair.split("|")[1] for pair in self.od}
+
+        max_flow = max([*self.flows.values(), 1])
+
+        self.window.fill((245, 245, 240))
+        self.window.blit(title_font.render("MO-RouteChoice  -  link congestion", True, (20, 20, 20)), (16, 12))
+        self.window.blit(
+            font.render(f"average travel time: {self.avg_tt:.3f}    drivers: {len(self.possible_agents)}", True, (60, 60, 60)),
+            (16, 38),
+        )
+
+        node_radius = self._node_radius
+        scale = node_radius / 20  # line widths and arrowheads shrink with the nodes
+        edges = set(self.graph.edges)
+        for u, v in edges:
+            flow = self.flows.get(f"{u}-{v}", 0)
+            ratio = flow / max_flow
+            start = np.array(self._node_pos[u], dtype=float)
+            end = np.array(self._node_pos[v], dtype=float)
+            direction = end - start
+            length = np.linalg.norm(direction)
+            if length > 0:
+                direction = direction / length
+            # Reciprocal roads (both A->B and B->A exist) would otherwise be drawn on the same
+            # segment, overwriting each other's line and flow label. Push each direction to its
+            # own side of the centre line so both flows stay readable.
+            if (v, u) in edges:
+                offset = np.array([-direction[1], direction[0]]) * max(3.0, node_radius * 0.35)
+            else:
+                offset = np.zeros(2)
+            # Stop the arrow at the node circles rather than at their centers.
+            p0 = start + direction * node_radius + offset
+            p1 = end - direction * node_radius + offset
+            color = _flow_color(ratio)
+            pygame.draw.line(self.window, color, p0, p1, max(1, int(round((3 + ratio * 9) * scale))))
+            self._draw_arrowhead(p1, direction, color, scale)
+            if self._draw_labels:
+                mid = (p0 + p1) / 2
+                self.window.blit(font.render(str(int(flow)), True, (20, 20, 20)), (mid[0] + 4, mid[1] - 18))
+
+        ring_width = max(1, int(round(4 * scale)))
+        for node, (x, y) in self._node_pos.items():
+            is_origin, is_destination = node in origins, node in destinations
+            pygame.draw.circle(self.window, (255, 255, 255), (int(x), int(y)), node_radius)
+            if is_origin and is_destination:
+                # A node can be both an origin and a destination (every OD zone in
+                # Eastern-Massachusetts and SF is): show it as a split ring rather than
+                # letting the origin branch hide its destination role.
+                box = pygame.Rect(int(x) - node_radius, int(y) - node_radius, 2 * node_radius, 2 * node_radius)
+                pygame.draw.arc(self.window, (40, 160, 60), box, 0.0, np.pi, ring_width)
+                pygame.draw.arc(self.window, (200, 50, 50), box, np.pi, 2 * np.pi, ring_width)
+                label = "OD"
+            else:
+                if is_origin:
+                    ring_color, label = (40, 160, 60), "O"
+                elif is_destination:
+                    ring_color, label = (200, 50, 50), "D"
+                else:
+                    ring_color, label = (120, 120, 120), ""
+                pygame.draw.circle(self.window, ring_color, (int(x), int(y)), node_radius, ring_width)
+            if self._draw_labels:
+                txt = font.render(f"{node}{(' ' + label) if label else ''}", True, (20, 20, 20))
+                self.window.blit(txt, (int(x) - txt.get_width() // 2, int(y) - txt.get_height() // 2))
+
+        # Congestion legend.
+        for i, (lbl, ratio) in enumerate([("free", 0.0), ("busy", 0.5), ("congested", 1.0)]):
+            ly = self.window_size[1] - 24
+            lx = 16 + i * 130
+            pygame.draw.line(self.window, _flow_color(ratio), (lx, ly), (lx + 28, ly), 3 + int(ratio * 9))
+            self.window.blit(font.render(lbl, True, (60, 60, 60)), (lx + 34, ly - 8))
+
+        if self.render_mode == "human":
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+        elif self.render_mode == "rgb_array":
+            return np.transpose(np.array(pygame.surfarray.pixels3d(self.window)), axes=(1, 0, 2))
+
+    def _compute_node_positions(self):
+        """Returns a dict mapping each node to its pixel position, using a deterministic spring layout."""
+        # Dense networks need more relaxation to stop nodes landing on top of each other; the
+        # default 50 iterations leaves pairs of Anaheim's 416 nodes ~1.5 px apart. Small
+        # networks keep the default so their layout (and the docs gif) is unchanged.
+        iterations = 200 if self.graph.number_of_nodes() > 30 else 50
+        layout = nx.spring_layout(self.graph, seed=42, iterations=iterations)
+        xs = [p[0] for p in layout.values()]
+        ys = [p[1] for p in layout.values()]
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+        margin = 70
+        width = self.window_size[0] - 2 * margin
+        height = self.window_size[1] - 2 * margin - 30  # leave room for the title
+        positions = {}
+        for node, (x, y) in layout.items():
+            nx_ = (x - min_x) / (max_x - min_x) if max_x > min_x else 0.5
+            ny_ = (y - min_y) / (max_y - min_y) if max_y > min_y else 0.5
+            positions[node] = (margin + nx_ * width, margin + 30 + ny_ * height)
+        return positions
+
+    def _adapt_scale_to_density(self):
+        """Sizes nodes and labels from how tightly the computed layout packs them.
+
+        A fixed 20 px radius turns the large bundled networks into an unreadable blob - every
+        one of Anaheim's 416 nodes overlaps another. The radius is instead derived from the
+        spacing the layout actually produced, and labels are dropped once nodes are too small
+        to hold them.
+        """
+        points = np.array(list(self._node_pos.values()), dtype=float)
+        if len(points) < 2:
+            self._node_radius, self._draw_labels = 20, True
+            return
+        distances = np.linalg.norm(points[:, None, :] - points[None, :, :], axis=-1)
+        np.fill_diagonal(distances, np.inf)
+        # The 10th percentile of nearest-neighbour distances: the crowded part of the network
+        # sets the scale, without a single coincident pair shrinking everything to nothing.
+        spacing = float(np.percentile(distances.min(axis=1), 10))
+        self._node_radius = int(np.clip(spacing * 0.40, 3, 20))
+        self._draw_labels = self._node_radius >= 10
+
+    def _draw_arrowhead(self, tip, direction, color, scale=1.0):
+        """Draws a small triangular arrowhead at `tip` pointing along `direction`."""
+        perp = np.array([-direction[1], direction[0]])
+        base = tip - direction * 12 * scale
+        left = base + perp * 6 * scale
+        right = base - perp * 6 * scale
+        pygame.draw.polygon(self.window, color, [tip, left, right])
+
+    @override
+    def close(self):
+        """Releases the rendering resources owned by this environment.
+
+        Only this instance's resources are released. `pygame.quit()` would shut the font and
+        display subsystems down process-wide, so closing one environment would break every
+        other one still rendering.
+        """
+        if self.window is not None:
+            if self.render_mode == "human":
+                pygame.display.quit()
+            self.window = None
+            self.clock = None
 
     @override
     def reset(self, seed=None, options=None):
@@ -206,8 +408,10 @@ class MORouteChoice(MOParallelEnv, EzPickle):
         self.agents = self.possible_agents[:]
         self.terminations = {agent: False for agent in self.agents}
         self.truncations = {agent: False for agent in self.agents}
-        # Reset the flows of each arc
+        # Reset the flows of each arc, and the travel time they produced, so a rendered frame
+        # after reset() does not show the previous episode's average beside an empty network.
         self.flows = {f"{edge[0]}-{edge[1]}": 0 for edge in self.graph.edges}
+        self.avg_tt = 0.0
         observations = {agent: 0 for agent in self.agents}
         self.episode_num = 0
 
