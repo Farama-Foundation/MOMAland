@@ -5,7 +5,10 @@ firstpage:
 ---
 
 # MO-Ingenious
-
+```{figure} ../_static/gifs/moingenious.gif
+:width: 200px
+:name: moingenious
+```
 |   |   |
 |---|---|
 | Agents names | `agent_i for i in [0, 1]` |
