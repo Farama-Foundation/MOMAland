@@ -5,7 +5,10 @@ firstpage:
 ---
 
 # MO-SameGame
-
+```{figure} ../_static/gifs/mosame_game.gif
+:width: 200px
+:name: mosame_game
+```
 |   |   |
 |---|---|
 | Agents names | `agent_i for i in [0, 0]` |
